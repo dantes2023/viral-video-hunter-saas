@@ -1,17 +1,13 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Search, Video, BarChart2, History, Settings, User } from 'lucide-react';
+import { Menu, X, Video, History, Settings, User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/context/AuthContext';
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Mock login/logout para demonstração
-  const toggleLogin = () => {
-    setIsLoggedIn(!isLoggedIn);
-  };
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-sm">
@@ -39,7 +35,7 @@ const Navigation = () => {
           </div>
           
           <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
-            {isLoggedIn ? (
+            {user ? (
               <>
                 <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">
                   <Settings className="h-5 w-5" />
@@ -47,7 +43,7 @@ const Navigation = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={toggleLogin} 
+                  onClick={() => signOut()} 
                   className="font-medium"
                 >
                   Sair
@@ -117,7 +113,7 @@ const Navigation = () => {
           </Link>
           
           <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
-            {isLoggedIn ? (
+            {user ? (
               <>
                 <div className="flex items-center px-4">
                   <div className="flex-shrink-0">
@@ -126,15 +122,17 @@ const Navigation = () => {
                     </div>
                   </div>
                   <div className="ml-3">
-                    <div className="text-base font-medium text-gray-800 dark:text-white">Usuário Demo</div>
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">usuario@exemplo.com</div>
+                    <div className="text-base font-medium text-gray-800 dark:text-white">{user.email}</div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
                   <Button 
                     variant="ghost" 
                     className="w-full justify-start"
-                    onClick={toggleLogin}
+                    onClick={() => {
+                      signOut();
+                      setIsMobileMenuOpen(false);
+                    }}
                   >
                     Sair
                   </Button>
@@ -143,10 +141,10 @@ const Navigation = () => {
             ) : (
               <div className="mt-3 space-y-1 px-2">
                 <Button asChild className="w-full justify-center mb-2" variant="outline">
-                  <Link to="/login">Entrar</Link>
+                  <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>Entrar</Link>
                 </Button>
                 <Button asChild className="w-full justify-center bg-brand-500 hover:bg-brand-600">
-                  <Link to="/register">Cadastrar</Link>
+                  <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>Cadastrar</Link>
                 </Button>
               </div>
             )}

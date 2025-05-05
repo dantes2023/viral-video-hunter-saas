@@ -1,44 +1,20 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from '@/context/AuthContext';
 
 export const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signIn, loading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    // Simulação de login
-    setTimeout(() => {
-      setIsLoading(false);
-      if (email && password) {
-        // Sucesso de login (simulado)
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo de volta ao CaçaViral.",
-          variant: "default",
-        });
-        navigate('/dashboard');
-      } else {
-        // Erro de login
-        toast({
-          title: "Erro ao fazer login",
-          description: "Verifique suas credenciais e tente novamente.",
-          variant: "destructive",
-        });
-      }
-    }, 1000);
+    await signIn(email, password);
   };
 
   return (
@@ -84,9 +60,9 @@ export const LoginForm = () => {
       <Button 
         type="submit" 
         className="w-full bg-brand-500 hover:bg-brand-600" 
-        disabled={isLoading}
+        disabled={loading}
       >
-        {isLoading ? "Entrando..." : "Entrar"}
+        {loading ? "Entrando..." : "Entrar"}
       </Button>
     </form>
   );
@@ -99,45 +75,23 @@ export const RegisterForm = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const { signUp, loading } = useAuth();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação de senha
     if (password !== confirmPassword) {
-      toast({
-        title: "As senhas não correspondem",
-        description: "Por favor, verifique se as senhas digitadas são iguais.",
-        variant: "destructive",
-      });
+      alert("As senhas não correspondem");
       return;
     }
     
-    setIsLoading(true);
+    if (!termsAccepted) {
+      alert("Você precisa aceitar os termos de serviço");
+      return;
+    }
     
-    // Simulação de registro
-    setTimeout(() => {
-      setIsLoading(false);
-      if (email && password && name) {
-        // Sucesso de registro (simulado)
-        toast({
-          title: "Cadastro realizado com sucesso!",
-          description: "Bem-vindo ao CaçaViral! Sua conta foi criada.",
-          variant: "default",
-        });
-        navigate('/dashboard');
-      } else {
-        // Erro de registro
-        toast({
-          title: "Erro ao criar conta",
-          description: "Por favor, preencha todos os campos corretamente.",
-          variant: "destructive",
-        });
-      }
-    }, 1000);
+    await signUp(email, password, name);
   };
 
   return (
@@ -213,6 +167,8 @@ export const RegisterForm = () => {
           type="checkbox"
           id="terms"
           className="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+          checked={termsAccepted}
+          onChange={(e) => setTermsAccepted(e.target.checked)}
           required
         />
         <label htmlFor="terms" className="text-sm">
@@ -223,9 +179,9 @@ export const RegisterForm = () => {
       <Button 
         type="submit" 
         className="w-full bg-brand-500 hover:bg-brand-600" 
-        disabled={isLoading}
+        disabled={loading}
       >
-        {isLoading ? "Criando conta..." : "Criar conta"}
+        {loading ? "Criando conta..." : "Criar conta"}
       </Button>
     </form>
   );

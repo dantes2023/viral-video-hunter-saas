@@ -9,7 +9,186 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      search_results: {
+        Row: {
+          channel_id: string
+          channel_name: string
+          comments: number | null
+          created_at: string
+          id: string
+          likes: number | null
+          published_at: string | null
+          search_id: string
+          subscribers: number | null
+          thumbnail_url: string | null
+          title: string
+          video_id: string
+          video_url: string | null
+          views: number | null
+        }
+        Insert: {
+          channel_id: string
+          channel_name: string
+          comments?: number | null
+          created_at?: string
+          id?: string
+          likes?: number | null
+          published_at?: string | null
+          search_id: string
+          subscribers?: number | null
+          thumbnail_url?: string | null
+          title: string
+          video_id: string
+          video_url?: string | null
+          views?: number | null
+        }
+        Update: {
+          channel_id?: string
+          channel_name?: string
+          comments?: number | null
+          created_at?: string
+          id?: string
+          likes?: number | null
+          published_at?: string | null
+          search_id?: string
+          subscribers?: number | null
+          thumbnail_url?: string | null
+          title?: string
+          video_id?: string
+          video_url?: string | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_results_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      searches: {
+        Row: {
+          channel_age: number | null
+          country: string | null
+          created_at: string
+          id: string
+          include_shorts: boolean | null
+          keyword: string
+          language: string | null
+          max_results: number | null
+          min_subscribers: number | null
+          min_views: number | null
+          user_id: string
+        }
+        Insert: {
+          channel_age?: number | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          include_shorts?: boolean | null
+          keyword: string
+          language?: string | null
+          max_results?: number | null
+          min_subscribers?: number | null
+          min_views?: number | null
+          user_id: string
+        }
+        Update: {
+          channel_age?: number | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          include_shorts?: boolean | null
+          keyword?: string
+          language?: string | null
+          max_results?: number | null
+          min_subscribers?: number | null
+          min_views?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          active: boolean
+          created_at: string
+          expires_at: string | null
+          id: string
+          plan: Database["public"]["Enums"]["plan_type"]
+          starts_at: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["plan_type"]
+          starts_at?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["plan_type"]
+          starts_at?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +197,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      plan_type: "free" | "basic" | "premium" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +312,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      plan_type: ["free", "basic", "premium", "enterprise"],
+    },
   },
 } as const
