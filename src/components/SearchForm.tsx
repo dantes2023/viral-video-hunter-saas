@@ -41,7 +41,8 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
     language: 'pt',
     country: 'BR',
     includeShorts: true,
-    sortBy: 'relevance'
+    sortBy: 'relevance',
+    channelAge: null
   });
 
   const handleFilterChange = (key: string, value: any) => {
@@ -79,7 +80,8 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
           maxResults: filters.maxResults,
           country: filters.country,
           language: filters.language,
-          sortBy: filters.sortBy
+          sortBy: filters.sortBy,
+          channelAge: filters.channelAge
         }
       });
       
@@ -109,11 +111,39 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
               country: filters.country,
               language: filters.language,
               include_shorts: filters.includeShorts,
-              max_results: filters.maxResults
+              max_results: filters.maxResults,
+              channel_age: filters.channelAge
             });
             
           if (searchError) {
             console.error('Erro ao salvar pesquisa no histórico:', searchError);
+          }
+          
+          // Salvar resultados da pesquisa
+          const formattedResults = data.results.map((item: any) => ({
+            search_id: searchError ? null : searchError.id, // Se houve erro, não temos id da pesquisa
+            video_id: item.id,
+            title: item.title,
+            channel_id: item.channelId,
+            channel_name: item.channelTitle,
+            thumbnail_url: item.thumbnails.medium?.url || item.thumbnails.default?.url,
+            video_url: `https://youtube.com/watch?v=${item.id}`,
+            views: item.viewCount,
+            likes: item.likeCount,
+            comments: item.commentCount,
+            subscribers: item.subscriberCount,
+            published_at: item.publishedAt
+          }));
+          
+          // Inserir resultados no banco de dados
+          if (formattedResults.length > 0 && !searchError) {
+            const { error: resultsError } = await supabase
+              .from('search_results')
+              .insert(formattedResults);
+              
+            if (resultsError) {
+              console.error('Erro ao salvar resultados da pesquisa:', resultsError);
+            }
           }
         }
         
@@ -307,6 +337,27 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                       </Select>
                     </div>
                   </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Idade do canal</label>
+                  <Select 
+                    value={filters.channelAge || ''} 
+                    onValueChange={(value) => handleFilterChange('channelAge', value ? value : null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Qualquer idade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Qualquer idade</SelectItem>
+                      <SelectItem value="1day">Último dia</SelectItem>
+                      <SelectItem value="7days">Últimos 7 dias</SelectItem>
+                      <SelectItem value="15days">Últimos 15 dias</SelectItem>
+                      <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                      <SelectItem value="2months">Últimos 2 meses</SelectItem>
+                      <SelectItem value="3months">Últimos 3 meses</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <Accordion type="single" collapsible className="w-full">

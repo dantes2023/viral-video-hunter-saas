@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Download, Clock, Trash2, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Search, Download, Clock, Trash2, ExternalLink, AlertTriangle, FileDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import VideoResults from "@/components/VideoResults";
 import {
   Table,
   TableBody,
@@ -26,6 +27,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Tipo para o histórico de pesquisa
 interface SearchHistoryItem {
@@ -38,6 +46,24 @@ interface SearchHistoryItem {
   language: string;
   include_shorts: boolean;
   max_results: number;
+  channel_age?: string;
+}
+
+// Tipo para o resultado de pesquisa
+interface SearchResultItem {
+  id: string;
+  search_id: string;
+  video_id: string;
+  title: string;
+  channel_id: string;
+  channel_name: string;
+  thumbnail_url: string;
+  video_url: string;
+  views: number;
+  likes: number;
+  comments: number;
+  subscribers: number;
+  published_at: string;
 }
 
 // Formatador de data
@@ -58,6 +84,9 @@ const History = () => {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [selectedSearch, setSelectedSearch] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [resultsDialogOpen, setResultsDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -108,6 +137,16 @@ const History = () => {
         throw error;
       }
       
+      // Também exclui os resultados relacionados
+      const { error: resultsError } = await supabase
+        .from('search_results')
+        .delete()
+        .eq('search_id', id);
+        
+      if (resultsError) {
+        console.error('Erro ao excluir resultados:', resultsError);
+      }
+      
       setHistory(history.filter(item => item.id !== id));
       toast({
         title: "Item excluído",
@@ -129,6 +168,17 @@ const History = () => {
   // Limpar todo o histórico
   const handleClearAll = async () => {
     try {
+      // Primeiro excluir todos os resultados
+      const { error: resultsError } = await supabase
+        .from('search_results')
+        .delete()
+        .neq('id', 'dummy'); // Deleta todos os registros
+        
+      if (resultsError) {
+        console.error('Erro ao limpar resultados:', resultsError);
+      }
+      
+      // Depois excluir todas as pesquisas
       const { error } = await supabase
         .from('searches')
         .delete()
@@ -167,10 +217,130 @@ const History = () => {
           country: item.country,
           language: item.language,
           includeShorts: item.include_shorts,
-          maxResults: item.max_results
+          maxResults: item.max_results,
+          channelAge: item.channel_age
         }
       } 
     });
+  };
+  
+  // Função para visualizar resultados salvos
+  const handleViewResults = async (searchId: string) => {
+    try {
+      setSelectedSearch(searchId);
+      
+      const { data, error } = await supabase
+        .from('search_results')
+        .select('*')
+        .eq('search_id', searchId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Formatando os resultados para o formato esperado pelo VideoResults
+      const formattedResults = data.map((item: SearchResultItem) => ({
+        id: item.video_id,
+        title: item.title,
+        channelTitle: item.channel_name,
+        thumbnail: item.thumbnail_url,
+        viewCount: item.views,
+        likeCount: item.likes,
+        subscriberCount: item.subscribers,
+        publishedAt: item.published_at,
+      }));
+      
+      setSearchResults(formattedResults);
+      setResultsDialogOpen(true);
+      
+      if (formattedResults.length === 0) {
+        toast({
+          title: "Sem resultados salvos",
+          description: "Esta pesquisa não tem resultados salvos no banco de dados.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar resultados:', error);
+      toast({
+        title: "Erro ao buscar resultados",
+        description: error.message || "Não foi possível buscar os resultados desta pesquisa",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Exportar os resultados de uma pesquisa
+  const handleExportResults = async (searchId: string, keyword: string) => {
+    try {
+      // Buscar os resultados da pesquisa
+      const { data, error } = await supabase
+        .from('search_results')
+        .select('*')
+        .eq('search_id', searchId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        toast({
+          title: "Sem dados para exportar",
+          description: "Esta pesquisa não tem resultados salvos que possam ser exportados.",
+        });
+        return;
+      }
+      
+      // Formatar os dados para CSV
+      const headers = [
+        'Título', 
+        'Canal', 
+        'Visualizações', 
+        'Likes', 
+        'Comentários', 
+        'Inscritos',
+        'Data de Publicação',
+        'Link do Vídeo'
+      ].join(',');
+      
+      const rows = data.map((item: SearchResultItem) => [
+        `"${item.title.replace(/"/g, '""')}"`, // Escapa aspas duplas para CSV
+        `"${item.channel_name}"`,
+        item.views,
+        item.likes,
+        item.comments,
+        item.subscribers,
+        new Date(item.published_at).toLocaleDateString('pt-BR'),
+        `"https://youtube.com/watch?v=${item.video_id}"`
+      ].join(','));
+      
+      const csvContent = [headers, ...rows].join('\n');
+      
+      // Criar um arquivo para download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      // Criar link para download
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `resultados_${keyword}_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      
+      // Iniciar download e limpar
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Exportação concluída",
+        description: "Os resultados foram exportados com sucesso.",
+      });
+    } catch (error: any) {
+      console.error('Erro ao exportar resultados:', error);
+      toast({
+        title: "Erro na exportação",
+        description: error.message || "Não foi possível exportar os resultados",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -264,7 +434,10 @@ const History = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredHistory.map((item) => (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} 
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                      onClick={() => handleViewResults(item.id)}
+                    >
                       <TableCell className="font-medium">{item.keyword}</TableCell>
                       <TableCell>{formatDate(item.created_at)}</TableCell>
                       <TableCell className="hidden md:table-cell">
@@ -280,18 +453,41 @@ const History = () => {
                               No Shorts
                             </span>
                           )}
+                          {item.channel_age && (
+                            <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs">
+                              Idade: {item.channel_age}
+                            </span>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
                           <Button 
                             variant="outline" 
                             size="sm" 
                             className="h-8 w-8 p-0"
-                            onClick={() => handleRepeatSearch(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRepeatSearch(item);
+                            }}
+                            title="Repetir busca"
                           >
                             <ExternalLink size={14} />
                             <span className="sr-only">Repetir busca</span>
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExportResults(item.id, item.keyword);
+                            }}
+                            title="Exportar resultados"
+                          >
+                            <FileDown size={14} />
+                            <span className="sr-only">Exportar</span>
                           </Button>
                           
                           <AlertDialog>
@@ -300,6 +496,8 @@ const History = () => {
                                 variant="outline" 
                                 size="sm" 
                                 className="h-8 w-8 p-0 text-red-500 border-red-200 hover:border-red-300 dark:border-red-800 dark:hover:border-red-700"
+                                onClick={(e) => e.stopPropagation()}
+                                title="Excluir"
                               >
                                 <Trash2 size={14} />
                                 <span className="sr-only">Excluir</span>
@@ -342,6 +540,30 @@ const History = () => {
             )}
           </div>
         )}
+        
+        {/* Dialog para exibir resultados da pesquisa */}
+        <Dialog open={resultsDialogOpen} onOpenChange={setResultsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Resultados da pesquisa</DialogTitle>
+              <DialogDescription>
+                Resultados salvos desta pesquisa.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {searchResults.length > 0 ? (
+              <VideoResults results={searchResults} />
+            ) : (
+              <div className="py-8 text-center">
+                <AlertTriangle className="mx-auto h-10 w-10 text-yellow-500" />
+                <h3 className="mt-2 text-sm font-medium">Nenhum resultado encontrado</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Esta pesquisa não possui resultados salvos.
+                </p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

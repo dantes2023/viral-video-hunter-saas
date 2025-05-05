@@ -27,7 +27,8 @@ serve(async (req) => {
       maxResults, 
       country, 
       language,
-      sortBy 
+      sortBy,
+      channelAge
     } = await req.json();
 
     if (!keyword) {
@@ -48,6 +49,39 @@ serve(async (req) => {
     
     if (language) {
       searchUrl.searchParams.append("relevanceLanguage", language);
+    }
+
+    // Se tiver filtro de idade do canal, calcula a data máxima de publicação
+    let channelMaxAge = null;
+    if (channelAge) {
+      const now = new Date();
+      
+      // Baseado no valor do channelAge, calcula a data limite
+      if (channelAge === "1day") {
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        channelMaxAge = yesterday.toISOString();
+      } else if (channelAge === "7days") {
+        const lastWeek = new Date(now);
+        lastWeek.setDate(lastWeek.getDate() - 7);
+        channelMaxAge = lastWeek.toISOString();
+      } else if (channelAge === "15days") {
+        const twoWeeksAgo = new Date(now);
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 15);
+        channelMaxAge = twoWeeksAgo.toISOString();
+      } else if (channelAge === "30days") {
+        const monthAgo = new Date(now);
+        monthAgo.setDate(monthAgo.getDate() - 30);
+        channelMaxAge = monthAgo.toISOString();
+      } else if (channelAge === "2months") {
+        const twoMonthsAgo = new Date(now);
+        twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+        channelMaxAge = twoMonthsAgo.toISOString();
+      } else if (channelAge === "3months") {
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        channelMaxAge = threeMonthsAgo.toISOString();
+      }
     }
 
     console.log("Buscando vídeos com:", keyword);
@@ -78,7 +112,7 @@ serve(async (req) => {
     // Para cada vídeo, precisamos buscar as informações do canal
     const channelIds = [...new Set(videosData.items.map((item: any) => item.snippet.channelId))].join(",");
     const channelsUrl = new URL(`${YOUTUBE_API_BASE_URL}/channels`);
-    channelsUrl.searchParams.append("part", "snippet,statistics");
+    channelsUrl.searchParams.append("part", "snippet,statistics,contentDetails");
     channelsUrl.searchParams.append("id", channelIds);
     channelsUrl.searchParams.append("key", YOUTUBE_API_KEY || "");
 
@@ -105,12 +139,16 @@ serve(async (req) => {
       
       const viewCount = parseInt(video.statistics.viewCount || "0", 10);
       const subscriberCount = parseInt(channel?.statistics?.subscriberCount || "0", 10);
+      
+      // Informações do canal, incluindo data de criação se disponível
+      const channelPublishedAt = channel?.snippet?.publishedAt;
 
       return {
         id: video.id,
         title: video.snippet.title,
         channelTitle: video.snippet.channelTitle,
         channelId: video.snippet.channelId,
+        channelPublishedAt: channelPublishedAt,
         thumbnails: video.snippet.thumbnails,
         publishedAt: video.snippet.publishedAt,
         viewCount: viewCount,
@@ -143,6 +181,14 @@ serve(async (req) => {
     if (includeShorts === false) {
       results = results.filter(video => !video.isShort);
     }
+    
+    // Filtro de idade do canal
+    if (channelMaxAge) {
+      results = results.filter(video => {
+        if (!video.channelPublishedAt) return true; // Se não tiver informação, mantém
+        return new Date(video.channelPublishedAt) >= new Date(channelMaxAge);
+      });
+    }
 
     // Aplicar ordenação conforme solicitado
     if (sortBy === "views") {
@@ -153,9 +199,6 @@ serve(async (req) => {
     // Se for "relevance", não precisamos ordenar pois a API já retorna em ordem de relevância
 
     console.log(`Encontrados ${results.length} resultados após filtragem`);
-
-    // Salvar a pesquisa e resultados no banco de dados (opcional)
-    // Isso pode ser implementado posteriormente
 
     return new Response(
       JSON.stringify({ 
