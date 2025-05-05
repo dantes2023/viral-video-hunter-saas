@@ -350,6 +350,7 @@ const History = () => {
                             size="icon"
                             onClick={() => handleViewResults(item)}
                             className="h-8 w-8"
+                            title="Ver resultados"
                           >
                             <ArrowUpRight size={18} />
                           </Button>
@@ -359,6 +360,7 @@ const History = () => {
                             size="icon"
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                             onClick={() => handleDeleteSearch(item.id)}
+                            title="Apagar busca"
                           >
                             <Trash size={18} />
                           </Button>
