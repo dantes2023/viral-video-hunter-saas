@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Download, Clock, Trash2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navigation from "@/components/Navigation";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -29,85 +31,14 @@ import {
 interface SearchHistoryItem {
   id: string;
   keyword: string;
-  date: string;
-  filters: {
-    country: string;
-    language: string;
-    minViews: number;
-    minSubscribers: number;
-    includeShorts: boolean;
-  };
-  resultsCount: number;
+  created_at: string;
+  min_views: number;
+  min_subscribers: number;
+  country: string;
+  language: string;
+  include_shorts: boolean;
+  max_results: number;
 }
-
-// Mock de dados para simulação
-const mockHistory: SearchHistoryItem[] = [
-  {
-    id: 'search-1',
-    keyword: 'receitas saudáveis',
-    date: '2024-05-01T10:30:00Z',
-    filters: {
-      country: 'BR',
-      language: 'pt',
-      minViews: 10000,
-      minSubscribers: 1000,
-      includeShorts: true
-    },
-    resultsCount: 42
-  },
-  {
-    id: 'search-2',
-    keyword: 'dicas de moda',
-    date: '2024-04-28T14:15:00Z',
-    filters: {
-      country: 'BR',
-      language: 'pt',
-      minViews: 50000,
-      minSubscribers: 5000,
-      includeShorts: false
-    },
-    resultsCount: 26
-  },
-  {
-    id: 'search-3',
-    keyword: 'unboxing iphone',
-    date: '2024-04-25T09:45:00Z',
-    filters: {
-      country: 'US',
-      language: 'en',
-      minViews: 100000,
-      minSubscribers: 10000,
-      includeShorts: true
-    },
-    resultsCount: 38
-  },
-  {
-    id: 'search-4',
-    keyword: 'jogos indie',
-    date: '2024-04-22T16:20:00Z',
-    filters: {
-      country: 'BR',
-      language: 'pt',
-      minViews: 5000,
-      minSubscribers: 1000,
-      includeShorts: true
-    },
-    resultsCount: 19
-  },
-  {
-    id: 'search-5',
-    keyword: 'viagem europa',
-    date: '2024-04-15T11:10:00Z',
-    filters: {
-      country: 'BR',
-      language: 'pt',
-      minViews: 20000,
-      minSubscribers: 5000,
-      includeShorts: false
-    },
-    resultsCount: 31
-  }
-];
 
 // Formatador de data
 const formatDate = (dateString: string): string => {
@@ -123,9 +54,42 @@ const formatDate = (dateString: string): string => {
 
 const History = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [history, setHistory] = useState<SearchHistoryItem[]>(mockHistory);
+  const [history, setHistory] = useState<SearchHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Carregar histórico de pesquisas
+  useEffect(() => {
+    const fetchSearchHistory = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('searches')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
+        
+        setHistory(data || []);
+      } catch (error: any) {
+        console.error('Erro ao buscar histórico:', error);
+        toast({
+          title: "Erro ao carregar histórico",
+          description: error.message || "Não foi possível carregar seu histórico de buscas",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSearchHistory();
+  }, [toast]);
 
   // Filtrar histórico baseado na busca
   const filteredHistory = history.filter(item => 
@@ -133,23 +97,95 @@ const History = () => {
   );
 
   // Excluir um item do histórico
-  const handleDelete = (id: string) => {
-    setHistory(history.filter(item => item.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('searches')
+        .delete()
+        .eq('id', id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setHistory(history.filter(item => item.id !== id));
+      toast({
+        title: "Item excluído",
+        description: "O item foi removido do seu histórico de buscas",
+      });
+    } catch (error: any) {
+      console.error('Erro ao excluir item:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: error.message || "Não foi possível excluir o item",
+        variant: "destructive",
+      });
+    }
+    
     setDeleteDialogOpen(false);
     setItemToDelete(null);
   };
 
   // Limpar todo o histórico
-  const handleClearAll = () => {
-    setHistory([]);
+  const handleClearAll = async () => {
+    try {
+      const { error } = await supabase
+        .from('searches')
+        .delete()
+        .neq('id', 'dummy'); // Deleta todos os registros
+        
+      if (error) {
+        throw error;
+      }
+      
+      setHistory([]);
+      toast({
+        title: "Histórico limpo",
+        description: "Seu histórico de buscas foi completamente apagado",
+      });
+    } catch (error: any) {
+      console.error('Erro ao limpar histórico:', error);
+      toast({
+        title: "Erro ao limpar histórico",
+        description: error.message || "Não foi possível limpar o histórico",
+        variant: "destructive",
+      });
+    }
+    
     setDeleteDialogOpen(false);
   };
 
-  // Repetir a busca (simulação)
-  const handleRepeatSearch = (keyword: string, filters: any) => {
-    console.log(`Repetindo busca: ${keyword}`, filters);
-    // Aqui seria implementada a lógica para redirecionar para o dashboard com os filtros preenchidos
+  // Repetir a busca
+  const handleRepeatSearch = (item: SearchHistoryItem) => {
+    // Navegar para o dashboard com os parâmetros da busca
+    navigate('/dashboard', { 
+      state: { 
+        searchParams: {
+          keyword: item.keyword,
+          minViews: item.min_views,
+          minSubscribers: item.min_subscribers,
+          country: item.country,
+          language: item.language,
+          includeShorts: item.include_shorts,
+          maxResults: item.max_results
+        }
+      } 
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <Navigation />
+        <main className="flex-grow container px-4 md:px-6 py-8">
+          <h1 className="text-3xl font-bold mb-6">Histórico de Buscas</h1>
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -172,7 +208,12 @@ const History = () => {
           
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="flex items-center gap-1">
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                className="flex items-center gap-1"
+                disabled={history.length === 0}
+              >
                 <Trash2 size={16} />
                 <span>Limpar histórico</span>
               </Button>
@@ -217,8 +258,7 @@ const History = () => {
                   <TableRow>
                     <TableHead>Palavra-chave</TableHead>
                     <TableHead>Data</TableHead>
-                    <TableHead className="hidden md:table-cell">Resultados</TableHead>
-                    <TableHead className="hidden lg:table-cell">Filtros</TableHead>
+                    <TableHead className="hidden md:table-cell">Filtros</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -226,17 +266,16 @@ const History = () => {
                   {filteredHistory.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.keyword}</TableCell>
-                      <TableCell>{formatDate(item.date)}</TableCell>
-                      <TableCell className="hidden md:table-cell">{item.resultsCount} vídeos</TableCell>
-                      <TableCell className="hidden lg:table-cell">
+                      <TableCell>{formatDate(item.created_at)}</TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="flex flex-wrap gap-1">
                           <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs">
-                            {item.filters.country}
+                            {item.country}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs">
-                            +{item.filters.minViews.toLocaleString()} views
+                            +{item.min_views.toLocaleString()} views
                           </span>
-                          {!item.filters.includeShorts && (
+                          {!item.include_shorts && (
                             <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs">
                               No Shorts
                             </span>
@@ -249,19 +288,10 @@ const History = () => {
                             variant="outline" 
                             size="sm" 
                             className="h-8 w-8 p-0"
-                            onClick={() => handleRepeatSearch(item.keyword, item.filters)}
+                            onClick={() => handleRepeatSearch(item)}
                           >
                             <ExternalLink size={14} />
                             <span className="sr-only">Repetir busca</span>
-                          </Button>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 w-8 p-0"
-                          >
-                            <Download size={14} />
-                            <span className="sr-only">Exportar resultados</span>
                           </Button>
                           
                           <AlertDialog>

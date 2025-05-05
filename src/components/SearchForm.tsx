@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, Sliders } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -21,10 +21,17 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-const SearchForm = ({ onSearch }: { onSearch: (filters: any) => void }) => {
+const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loading: boolean) => void }) => {
   const [keyword, setKeyword] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
   const [filters, setFilters] = useState({
     minViews: 10000,
     maxResults: 20,
@@ -34,16 +41,118 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any) => void }) => {
     includeShorts: true
   });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch({ keyword, ...filters });
-  };
-
   const handleFilterChange = (key: string, value: any) => {
     setFilters({
       ...filters,
       [key]: value
     });
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!keyword.trim()) {
+      toast({
+        title: "Palavra-chave necessária",
+        description: "Digite uma palavra-chave para pesquisar vídeos",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSearching(true);
+    onSearch({ keyword, ...filters }, [], true);
+    
+    try {
+      // Chamar a função Edge do Supabase para buscar vídeos
+      const { data, error } = await supabase.functions.invoke('youtube-search', {
+        body: { 
+          keyword, 
+          minViews: filters.minViews,
+          minSubscribers: filters.minSubscribers,
+          includeShorts: filters.includeShorts,
+          maxResults: filters.maxResults,
+          country: filters.country,
+          language: filters.language
+        }
+      });
+      
+      if (error) {
+        console.error('Erro ao buscar vídeos:', error);
+        toast({
+          title: "Erro na pesquisa",
+          description: error.message || "Ocorreu um erro durante a pesquisa. Tente novamente.",
+          variant: "destructive",
+        });
+        onSearch({ keyword, ...filters }, [], false);
+        return;
+      }
+      
+      if (data.success) {
+        console.log('Resultados da pesquisa:', data.results);
+        
+        // Salvar pesquisa no histórico
+        if (user) {
+          const { error: searchError } = await supabase
+            .from('searches')
+            .insert({
+              user_id: user.id,
+              keyword,
+              min_views: filters.minViews,
+              min_subscribers: filters.minSubscribers,
+              country: filters.country,
+              language: filters.language,
+              include_shorts: filters.includeShorts,
+              max_results: filters.maxResults
+            });
+            
+          if (searchError) {
+            console.error('Erro ao salvar pesquisa no histórico:', searchError);
+          }
+        }
+        
+        // Transformar resultados no formato esperado pelo VideoResults
+        const formattedResults = data.results.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          channelTitle: item.channelTitle,
+          thumbnail: item.thumbnails.medium?.url || item.thumbnails.default?.url,
+          viewCount: item.viewCount,
+          likeCount: item.likeCount,
+          subscriberCount: item.subscriberCount,
+          publishedAt: item.publishedAt,
+          description: item.description,
+          isShort: item.isShort
+        }));
+        
+        // Atualizar os resultados no componente pai
+        onSearch({ keyword, ...filters }, formattedResults, false);
+        
+        if (formattedResults.length === 0) {
+          toast({
+            title: "Nenhum resultado encontrado",
+            description: "Tente ajustar seus filtros ou usar uma palavra-chave diferente.",
+          });
+        }
+      } else {
+        toast({
+          title: "Erro na pesquisa",
+          description: data.error || "Ocorreu um erro durante a pesquisa. Tente novamente.",
+          variant: "destructive",
+        });
+        onSearch({ keyword, ...filters }, [], false);
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar vídeos:', error);
+      toast({
+        title: "Erro na pesquisa",
+        description: error.message || "Ocorreu um erro durante a pesquisa. Tente novamente.",
+        variant: "destructive",
+      });
+      onSearch({ keyword, ...filters }, [], false);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -194,8 +303,9 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any) => void }) => {
           <Button 
             type="submit" 
             className="h-12 px-6 bg-brand-500 hover:bg-brand-600"
+            disabled={isSearching}
           >
-            Buscar
+            {isSearching ? 'Buscando...' : 'Buscar'}
           </Button>
         </div>
       </form>

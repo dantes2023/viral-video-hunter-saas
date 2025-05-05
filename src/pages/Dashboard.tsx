@@ -7,20 +7,6 @@ import SearchForm from "@/components/SearchForm";
 import VideoResults, { VideoData } from "@/components/VideoResults";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Mock de dados para simulação
-const mockVideos: VideoData[] = Array(12).fill(null).map((_, index) => ({
-  id: `video-${index}`,
-  title: `Vídeo viral ${index + 1}: Como fazer sucesso no YouTube rapidamente`,
-  channelTitle: `Canal Criativo ${index + 1}`,
-  thumbnail: `https://picsum.photos/seed/${index + 1}/640/360`,
-  viewCount: Math.floor(Math.random() * 1000000) + 10000,
-  likeCount: Math.floor(Math.random() * 50000) + 1000,
-  subscriberCount: Math.floor(Math.random() * 1000000) + 10000,
-  publishedAt: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString(),
-  description: 'Uma descrição interessante sobre o conteúdo deste vídeo viral que está fazendo sucesso.',
-  isShort: index % 3 === 0
-}));
-
 // Formatador de números
 const formatNumber = (num: number): string => {
   if (num >= 1000000) {
@@ -37,27 +23,44 @@ const Dashboard = () => {
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [keyword, setKeyword] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [stats, setStats] = useState({
+    totalViews: 0,
+    avgLikes: 0,
+    avgSubscribers: 0,
+    totalShorts: 0
+  });
 
   // Manipula a busca
-  const handleSearch = (filters: any) => {
+  const handleSearch = (filters: any, results: VideoData[], loading: boolean) => {
     console.log('Searching with filters:', filters);
     setKeyword(filters.keyword);
-    setIsLoading(true);
+    setIsLoading(loading);
     setHasSearched(true);
     
-    // Simulação de chamada de API
-    setTimeout(() => {
-      setVideos(mockVideos);
-      setIsLoading(false);
-    }, 1500);
-  };
-
-  // Cálculo das estatísticas de resumo (baseado nos dados mock)
-  const stats = {
-    totalViews: mockVideos.reduce((sum, video) => sum + video.viewCount, 0),
-    avgLikes: Math.round(mockVideos.reduce((sum, video) => sum + video.likeCount, 0) / mockVideos.length),
-    avgSubscribers: Math.round(mockVideos.reduce((sum, video) => sum + video.subscriberCount, 0) / mockVideos.length),
-    totalShorts: mockVideos.filter(v => v.isShort).length
+    if (!loading && results.length > 0) {
+      setVideos(results);
+      
+      // Calcular estatísticas com base nos resultados reais
+      const totalViews = results.reduce((sum, video) => sum + video.viewCount, 0);
+      const avgLikes = Math.round(results.reduce((sum, video) => sum + video.likeCount, 0) / results.length);
+      const avgSubscribers = Math.round(results.reduce((sum, video) => sum + video.subscriberCount, 0) / results.length);
+      const totalShorts = results.filter(v => v.isShort).length;
+      
+      setStats({
+        totalViews,
+        avgLikes,
+        avgSubscribers,
+        totalShorts
+      });
+    } else if (!loading) {
+      setVideos([]);
+      setStats({
+        totalViews: 0,
+        avgLikes: 0,
+        avgSubscribers: 0,
+        totalShorts: 0
+      });
+    }
   };
 
   return (
@@ -68,7 +71,7 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
         
         {/* Status Cards */}
-        {hasSearched && !isLoading && (
+        {hasSearched && !isLoading && videos.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="pb-2">
