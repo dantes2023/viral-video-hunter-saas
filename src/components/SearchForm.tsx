@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -273,7 +274,7 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                           <SelectValue placeholder="Mínimo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sem mínimo</SelectItem>
+                          <SelectItem value="null">Sem mínimo</SelectItem>
                           <SelectItem value="1000">1.000+</SelectItem>
                           <SelectItem value="10000">10.000+</SelectItem>
                           <SelectItem value="100000">100.000+</SelectItem>
@@ -291,7 +292,7 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                           <SelectValue placeholder="Máximo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sem máximo</SelectItem>
+                          <SelectItem value="null">Sem máximo</SelectItem>
                           <SelectItem value="10000">10.000</SelectItem>
                           <SelectItem value="100000">100.000</SelectItem>
                           <SelectItem value="1000000">1.000.000</SelectItem>
@@ -315,7 +316,7 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                           <SelectValue placeholder="Mínimo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sem mínimo</SelectItem>
+                          <SelectItem value="null">Sem mínimo</SelectItem>
                           <SelectItem value="1000">1.000+</SelectItem>
                           <SelectItem value="10000">10.000+</SelectItem>
                           <SelectItem value="100000">100.000+</SelectItem>
@@ -333,7 +334,7 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                           <SelectValue placeholder="Máximo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sem máximo</SelectItem>
+                          <SelectItem value="null">Sem máximo</SelectItem>
                           <SelectItem value="10000">10.000</SelectItem>
                           <SelectItem value="100000">100.000</SelectItem>
                           <SelectItem value="1000000">1.000.000</SelectItem>
@@ -347,14 +348,14 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                 <div>
                   <label className="text-sm font-medium">Idade do canal</label>
                   <Select 
-                    value={filters.channelAge || ''} 
-                    onValueChange={(value) => handleFilterChange('channelAge', value ? value : null)}
+                    value={filters.channelAge || 'null'} 
+                    onValueChange={(value) => handleFilterChange('channelAge', value === 'null' ? null : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Qualquer idade" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Qualquer idade</SelectItem>
+                      <SelectItem value="null">Qualquer idade</SelectItem>
                       <SelectItem value="1day">Último dia</SelectItem>
                       <SelectItem value="7days">Últimos 7 dias</SelectItem>
                       <SelectItem value="15days">Últimos 15 dias</SelectItem>
