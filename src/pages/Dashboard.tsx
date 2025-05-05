@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, TrendingUp, BarChart2, Clock } from 'lucide-react';
+import { Eye, TrendingUp, BarChart2, Clock, Search } from 'lucide-react';
 import Navigation from "@/components/Navigation";
 import SearchForm from "@/components/SearchForm";
 import VideoResults, { VideoData } from "@/components/VideoResults";
