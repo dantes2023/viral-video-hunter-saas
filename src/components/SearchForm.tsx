@@ -97,61 +97,83 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
       
       if (data.success) {
         console.log('Resultados da pesquisa:', data.results);
+        let searchId = null;
         
         // Salvar pesquisa no histórico
         if (user) {
-          const { data: searchData, error: searchError } = await supabase
-            .from('searches')
-            .insert({
-              user_id: user.id,
-              keyword,
-              min_views: filters.minViews,
-              min_subscribers: filters.minSubscribers,
-              country: filters.country,
-              language: filters.language,
-              include_shorts: filters.includeShorts,
-              max_results: filters.maxResults,
-              channel_age: filters.channelAge
-            })
-            .select('id')
-            .single();
-            
-          if (searchError) {
-            console.error('Erro ao salvar pesquisa no histórico:', searchError);
-            // Continue with results even if we couldn't save to history
-          } else {
-            // Salvar resultados da pesquisa - Guard against null searchData
-            const searchId = searchData?.id;
-            
-            if (searchId) {
+          try {
+            const { data: searchData, error: searchError } = await supabase
+              .from('searches')
+              .insert({
+                user_id: user.id,
+                keyword,
+                min_views: filters.minViews,
+                min_subscribers: filters.minSubscribers,
+                country: filters.country,
+                language: filters.language,
+                include_shorts: filters.includeShorts,
+                max_results: filters.maxResults,
+                channel_age: filters.channelAge
+              })
+              .select('id')
+              .single();
+              
+            if (searchError) {
+              console.error('Erro ao salvar pesquisa no histórico:', searchError);
+              // Continue with results even if we couldn't save to history
+            } else {
+              // Salvar resultados da pesquisa
+              searchId = searchData?.id;
+              console.log('ID da pesquisa salva:', searchId);
+            }
+          } catch (insertError) {
+            console.error('Erro ao inserir pesquisa:', insertError);
+          }
+          
+          // Salvar resultados da pesquisa no banco de dados
+          if (searchId && data.results && data.results.length > 0) {
+            try {
               const formattedResults = data.results.map((item: any) => ({
                 search_id: searchId,
-                video_id: item.id,
-                title: item.title,
-                channel_id: item.channelId,
-                channel_name: item.channelTitle,
-                thumbnail_url: item.thumbnails.medium?.url || item.thumbnails.default?.url,
-                video_url: `https://youtube.com/watch?v=${item.id}`,
-                views: item.viewCount,
-                likes: item.likeCount,
-                comments: item.commentCount,
-                subscribers: item.subscriberCount,
-                published_at: item.publishedAt
+                video_id: item.id || null,
+                title: item.title || 'Sem título',
+                channel_id: item.channelId || null,
+                channel_name: item.channelTitle || 'Canal desconhecido',
+                thumbnail_url: item.thumbnails?.medium?.url || item.thumbnails?.default?.url || null,
+                video_url: item.id ? `https://youtube.com/watch?v=${item.id}` : null,
+                views: item.viewCount || 0,
+                likes: item.likeCount || 0,
+                comments: item.commentCount || 0,
+                subscribers: item.subscriberCount || 0,
+                published_at: item.publishedAt || null
               }));
               
-              // Inserir resultados no banco de dados
-              if (formattedResults.length > 0) {
-                const { error: resultsError } = await supabase
-                  .from('search_results')
-                  .insert(formattedResults);
-                  
-                if (resultsError) {
-                  console.error('Erro ao salvar resultados da pesquisa:', resultsError);
-                } else {
-                  console.log('Resultados da pesquisa salvos com sucesso!');
-                }
+              console.log('Resultados formatados para salvar:', formattedResults);
+              
+              // Inserir resultados no banco de dados em lotes de 10 se houver muitos
+              const { error: resultsError } = await supabase
+                .from('search_results')
+                .insert(formattedResults);
+                
+              if (resultsError) {
+                console.error('Erro ao salvar resultados da pesquisa:', resultsError);
+                toast({
+                  title: "Atenção",
+                  description: "Os resultados foram encontrados mas não puderam ser salvos no histórico.",
+                  variant: "warning",
+                });
+              } else {
+                console.log('Resultados da pesquisa salvos com sucesso!');
+                toast({
+                  title: "Sucesso",
+                  description: `${formattedResults.length} resultados salvos no histórico.`,
+                });
               }
+            } catch (resultsInsertError) {
+              console.error('Erro ao formatar/inserir resultados:', resultsInsertError);
             }
+          } else if (searchId) {
+            console.log('Não há resultados para salvar ou ID de pesquisa inválido');
           }
         }
         
