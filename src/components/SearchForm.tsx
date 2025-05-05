@@ -119,9 +119,10 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
             
           if (searchError) {
             console.error('Erro ao salvar pesquisa no histórico:', searchError);
+            // Continue with results even if we couldn't save to history
           }
           
-          // Salvar resultados da pesquisa
+          // Salvar resultados da pesquisa - Guard against null searchData
           const searchId = searchData?.id;
           
           if (searchId) {
@@ -267,8 +268,8 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                     <div>
                       <label className="text-xs text-muted-foreground">Mínimo</label>
                       <Select 
-                        value={filters.minViews ? filters.minViews.toString() : ''} 
-                        onValueChange={(value) => handleFilterChange('minViews', value ? parseInt(value) : null)}
+                        value={filters.minViews ? filters.minViews.toString() : "null"} 
+                        onValueChange={(value) => handleFilterChange('minViews', value === "null" ? null : parseInt(value))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Mínimo" />
@@ -285,8 +286,8 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                     <div>
                       <label className="text-xs text-muted-foreground">Máximo</label>
                       <Select 
-                        value={filters.maxViews ? filters.maxViews.toString() : ''} 
-                        onValueChange={(value) => handleFilterChange('maxViews', value ? parseInt(value) : null)}
+                        value={filters.maxViews ? filters.maxViews.toString() : "null"} 
+                        onValueChange={(value) => handleFilterChange('maxViews', value === "null" ? null : parseInt(value))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Máximo" />
@@ -309,8 +310,8 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                     <div>
                       <label className="text-xs text-muted-foreground">Mínimo</label>
                       <Select 
-                        value={filters.minSubscribers ? filters.minSubscribers.toString() : ''} 
-                        onValueChange={(value) => handleFilterChange('minSubscribers', value ? parseInt(value) : null)}
+                        value={filters.minSubscribers ? filters.minSubscribers.toString() : "null"} 
+                        onValueChange={(value) => handleFilterChange('minSubscribers', value === "null" ? null : parseInt(value))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Mínimo" />
@@ -327,8 +328,8 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                     <div>
                       <label className="text-xs text-muted-foreground">Máximo</label>
                       <Select 
-                        value={filters.maxSubscribers ? filters.maxSubscribers.toString() : ''} 
-                        onValueChange={(value) => handleFilterChange('maxSubscribers', value ? parseInt(value) : null)}
+                        value={filters.maxSubscribers ? filters.maxSubscribers.toString() : "null"} 
+                        onValueChange={(value) => handleFilterChange('maxSubscribers', value === "null" ? null : parseInt(value))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Máximo" />
@@ -348,8 +349,8 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                 <div>
                   <label className="text-sm font-medium">Idade do canal</label>
                   <Select 
-                    value={filters.channelAge || 'null'} 
-                    onValueChange={(value) => handleFilterChange('channelAge', value === 'null' ? null : value)}
+                    value={filters.channelAge || "null"} 
+                    onValueChange={(value) => handleFilterChange('channelAge', value === "null" ? null : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Qualquer idade" />
