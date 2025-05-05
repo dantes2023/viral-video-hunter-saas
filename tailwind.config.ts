@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,46 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Cores personalizadas para o Caçador de Vídeos Virais
+				brand: {
+					50: '#EBF4FF',
+					100: '#C3DEFE',
+					200: '#90C0FD',
+					300: '#63A4FB',
+					400: '#4593FA',
+					500: '#3182CE', // Azul principal
+					600: '#2B6CB0',
+					700: '#2C5282',
+					800: '#2A4365',
+					900: '#1A365D',
+				},
+				accent2: {
+					50: '#FAF5FF',
+					100: '#E9D8FD',
+					200: '#D6BCFA',
+					300: '#B794F4',
+					400: '#9F7AEA',
+					500: '#805AD5', // Roxo secundário
+					600: '#6B46C1',
+					700: '#553C9A',
+					800: '#44337A',
+					900: '#322659',
+				},
+				success: {
+					50: '#F0FDF4',
+					500: '#10B981',
+					900: '#064E3B',
+				},
+				warning: {
+					50: '#FFFBEB',
+					500: '#F59E0B',
+					900: '#78350F',
+				},
+				danger: {
+					50: '#FEF2F2',
+					500: '#EF4444',
+					900: '#7F1D1D',
 				}
 			},
 			borderRadius: {
@@ -84,11 +125,20 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-slow': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.7' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+				'hero-pattern': 'linear-gradient(120deg, #3182CE 0%, #805AD5 100%)'
 			}
 		}
 	},

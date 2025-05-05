@@ -1,0 +1,206 @@
+
+import React, { useState } from 'react';
+import { Search, Filter, Sliders } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
+const SearchForm = ({ onSearch }: { onSearch: (filters: any) => void }) => {
+  const [keyword, setKeyword] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    minViews: 10000,
+    maxResults: 20,
+    minSubscribers: 1000,
+    language: 'pt',
+    country: 'BR',
+    includeShorts: true
+  });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch({ keyword, ...filters });
+  };
+
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters({
+      ...filters,
+      [key]: value
+    });
+  };
+
+  return (
+    <div className="w-full">
+      <form onSubmit={handleSearch}>
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Input
+              type="text"
+              placeholder="Buscar vídeos virais..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="pl-10 h-12 rounded-lg"
+            />
+          </div>
+          
+          <Popover open={showFilters} onOpenChange={setShowFilters}>
+            <PopoverTrigger asChild>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="h-12 px-4 flex gap-2 items-center"
+              >
+                <Filter size={18} />
+                <span className="hidden sm:inline">Filtros</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 md:w-96">
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg mb-2">Filtros Avançados</h3>
+                
+                <div>
+                  <label className="text-sm font-medium">Quantidade de resultados</label>
+                  <Select 
+                    value={filters.maxResults.toString()} 
+                    onValueChange={(value) => handleFilterChange('maxResults', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Quantidade de resultados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 vídeos</SelectItem>
+                      <SelectItem value="20">20 vídeos</SelectItem>
+                      <SelectItem value="50">50 vídeos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Mínimo de visualizações</label>
+                  <Select 
+                    value={filters.minViews.toString()} 
+                    onValueChange={(value) => handleFilterChange('minViews', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Mínimo de visualizações" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1000">1.000+ visualizações</SelectItem>
+                      <SelectItem value="10000">10.000+ visualizações</SelectItem>
+                      <SelectItem value="100000">100.000+ visualizações</SelectItem>
+                      <SelectItem value="1000000">1.000.000+ visualizações</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Mínimo de inscritos no canal</label>
+                  <Select 
+                    value={filters.minSubscribers.toString()} 
+                    onValueChange={(value) => handleFilterChange('minSubscribers', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Mínimo de inscritos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1000">1.000+ inscritos</SelectItem>
+                      <SelectItem value="10000">10.000+ inscritos</SelectItem>
+                      <SelectItem value="100000">100.000+ inscritos</SelectItem>
+                      <SelectItem value="1000000">1.000.000+ inscritos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="advanced-filters">
+                    <AccordionTrigger className="text-sm font-medium">
+                      Filtros avançados
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-4 pt-2">
+                        <div>
+                          <label className="text-sm font-medium">País</label>
+                          <Select 
+                            value={filters.country} 
+                            onValueChange={(value) => handleFilterChange('country', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="País" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="BR">Brasil</SelectItem>
+                              <SelectItem value="US">Estados Unidos</SelectItem>
+                              <SelectItem value="ES">Espanha</SelectItem>
+                              <SelectItem value="PT">Portugal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium">Idioma</label>
+                          <Select 
+                            value={filters.language} 
+                            onValueChange={(value) => handleFilterChange('language', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Idioma" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pt">Português</SelectItem>
+                              <SelectItem value="en">Inglês</SelectItem>
+                              <SelectItem value="es">Espanhol</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="includeShorts"
+                            checked={filters.includeShorts}
+                            onChange={(e) => handleFilterChange('includeShorts', e.target.checked)}
+                            className="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                          />
+                          <label htmlFor="includeShorts" className="text-sm">
+                            Incluir Shorts
+                          </label>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          <Button 
+            type="submit" 
+            className="h-12 px-6 bg-brand-500 hover:bg-brand-600"
+          >
+            Buscar
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default SearchForm;
