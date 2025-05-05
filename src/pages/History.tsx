@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Download, Clock, Trash2, ExternalLink, AlertTriangle, FileDown } from 'lucide-react';
@@ -46,7 +45,7 @@ interface SearchHistoryItem {
   language: string;
   include_shorts: boolean;
   max_results: number;
-  channel_age?: string;
+  channel_age?: string | null;
 }
 
 // Tipo para o resultado de pesquisa
@@ -104,7 +103,9 @@ const History = () => {
           throw error;
         }
         
-        setHistory(data || []);
+        if (data) {
+          setHistory(data as SearchHistoryItem[]);
+        }
       } catch (error: any) {
         console.error('Erro ao buscar histórico:', error);
         toast({
@@ -552,7 +553,7 @@ const History = () => {
             </DialogHeader>
             
             {searchResults.length > 0 ? (
-              <VideoResults results={searchResults} />
+              <VideoResults videos={searchResults} />
             ) : (
               <div className="py-8 text-center">
                 <AlertTriangle className="mx-auto h-10 w-10 text-yellow-500" />

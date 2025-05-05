@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -101,7 +100,7 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
         
         // Salvar pesquisa no histórico
         if (user) {
-          const { error: searchError } = await supabase
+          const { data: searchData, error: searchError } = await supabase
             .from('searches')
             .insert({
               user_id: user.id,
@@ -113,36 +112,42 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
               include_shorts: filters.includeShorts,
               max_results: filters.maxResults,
               channel_age: filters.channelAge
-            });
+            })
+            .select('id')
+            .single();
             
           if (searchError) {
             console.error('Erro ao salvar pesquisa no histórico:', searchError);
           }
           
           // Salvar resultados da pesquisa
-          const formattedResults = data.results.map((item: any) => ({
-            search_id: searchError ? null : searchError.id, // Se houve erro, não temos id da pesquisa
-            video_id: item.id,
-            title: item.title,
-            channel_id: item.channelId,
-            channel_name: item.channelTitle,
-            thumbnail_url: item.thumbnails.medium?.url || item.thumbnails.default?.url,
-            video_url: `https://youtube.com/watch?v=${item.id}`,
-            views: item.viewCount,
-            likes: item.likeCount,
-            comments: item.commentCount,
-            subscribers: item.subscriberCount,
-            published_at: item.publishedAt
-          }));
+          const searchId = searchData?.id;
           
-          // Inserir resultados no banco de dados
-          if (formattedResults.length > 0 && !searchError) {
-            const { error: resultsError } = await supabase
-              .from('search_results')
-              .insert(formattedResults);
-              
-            if (resultsError) {
-              console.error('Erro ao salvar resultados da pesquisa:', resultsError);
+          if (searchId) {
+            const formattedResults = data.results.map((item: any) => ({
+              search_id: searchId,
+              video_id: item.id,
+              title: item.title,
+              channel_id: item.channelId,
+              channel_name: item.channelTitle,
+              thumbnail_url: item.thumbnails.medium?.url || item.thumbnails.default?.url,
+              video_url: `https://youtube.com/watch?v=${item.id}`,
+              views: item.viewCount,
+              likes: item.likeCount,
+              comments: item.commentCount,
+              subscribers: item.subscriberCount,
+              published_at: item.publishedAt
+            }));
+            
+            // Inserir resultados no banco de dados
+            if (formattedResults.length > 0) {
+              const { error: resultsError } = await supabase
+                .from('search_results')
+                .insert(formattedResults);
+                
+              if (resultsError) {
+                console.error('Erro ao salvar resultados da pesquisa:', resultsError);
+              }
             }
           }
         }
