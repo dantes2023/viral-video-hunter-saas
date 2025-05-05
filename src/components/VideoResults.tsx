@@ -138,6 +138,9 @@ const VideoResults = ({
 
 // Componente de card para visualização em grade
 const VideoCard = ({ video }: { video: VideoData }) => {
+  // URL para o vídeo no YouTube
+  const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
+  
   return (
     <Card className="video-card card-hover">
       <div className="relative">
@@ -153,7 +156,16 @@ const VideoCard = ({ video }: { video: VideoData }) => {
         )}
       </div>
       <div className="p-4">
-        <h3 className="font-medium text-base line-clamp-2 mb-1">{video.title}</h3>
+        <h3 className="font-medium text-base line-clamp-2 mb-1">
+          <a 
+            href={videoUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-brand-500 transition-colors"
+          >
+            {video.title}
+          </a>
+        </h3>
         <p className="text-muted-foreground text-sm mb-3">{video.channelTitle}</p>
         
         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -181,6 +193,9 @@ const VideoCard = ({ video }: { video: VideoData }) => {
 
 // Componente para visualização em lista
 const VideoListItem = ({ video }: { video: VideoData }) => {
+  // URL para o vídeo no YouTube
+  const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
+  
   return (
     <div className="flex gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow">
       <img 
@@ -190,7 +205,16 @@ const VideoListItem = ({ video }: { video: VideoData }) => {
       />
       <div className="flex flex-col flex-grow overflow-hidden">
         <div className="flex justify-between">
-          <h3 className="font-medium line-clamp-1">{video.title}</h3>
+          <h3 className="font-medium line-clamp-1">
+            <a 
+              href={videoUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-brand-500 transition-colors"
+            >
+              {video.title}
+            </a>
+          </h3>
           {video.isShort && (
             <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
               Short
