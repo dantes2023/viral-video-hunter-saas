@@ -8,12 +8,14 @@ import {
   BarChart2, 
   List, 
   Grid,
-  Download
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Tipos para os dados do vídeo
 export interface VideoData {
@@ -68,6 +70,17 @@ const VideoResults = ({
 
   if (isLoading) {
     return <LoadingSkeleton view={view} />;
+  }
+  
+  if (!videos || videos.length === 0) {
+    return (
+      <Alert className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Nenhum resultado encontrado para "{keyword}". Verifique se os resultados foram salvos corretamente durante a pesquisa.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   const handleExport = () => {

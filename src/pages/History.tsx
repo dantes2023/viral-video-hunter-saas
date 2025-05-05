@@ -103,6 +103,21 @@ const History = () => {
     setResultsLoading(true);
     
     try {
+      console.log('Fetching results for search ID:', searchItem.id);
+      
+      // Verificar se o ID da busca é válido
+      if (!searchItem.id) {
+        console.error('ID da busca é inválido:', searchItem.id);
+        toast({
+          title: "Erro ao carregar resultados",
+          description: "ID da busca inválido",
+          variant: "destructive",
+        });
+        setSearchResults([]);
+        setResultsLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('search_results')
         .select('*')
@@ -116,15 +131,29 @@ const History = () => {
           variant: "destructive",
         });
         setSearchResults([]);
+        setResultsLoading(false);
+        return;
+      }
+      
+      console.log('Search results data:', data);
+      
+      if (!data || data.length === 0) {
+        console.log('Nenhum resultado encontrado para esta busca');
+        toast({
+          title: "Sem resultados",
+          description: "Nenhum resultado encontrado para esta busca",
+        });
+        setSearchResults([]);
+        setResultsLoading(false);
         return;
       }
       
       // Transform the data to match VideoData format expected by VideoResults component
       const formattedResults = data.map(item => ({
-        id: item.video_id,
-        title: item.title,
-        channelTitle: item.channel_name,
-        thumbnail: item.thumbnail_url,
+        id: item.video_id || `video-${Math.random().toString(36).substr(2, 9)}`,
+        title: item.title || "Sem título",
+        channelTitle: item.channel_name || "Canal desconhecido",
+        thumbnail: item.thumbnail_url || "https://via.placeholder.com/480x360",
         viewCount: item.views || 0,
         likeCount: item.likes || 0,
         subscriberCount: item.subscribers || 0,
@@ -133,6 +162,7 @@ const History = () => {
         isShort: false
       }));
       
+      console.log('Formatted results:', formattedResults);
       setSearchResults(formattedResults);
     } catch (error: any) {
       console.error('Error fetching search results:', error);
