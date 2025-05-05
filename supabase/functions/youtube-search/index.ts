@@ -17,7 +17,18 @@ serve(async (req) => {
   }
 
   try {
-    const { keyword, minViews, minSubscribers, includeShorts, maxResults, country, language } = await req.json();
+    const { 
+      keyword, 
+      minViews, 
+      maxViews, 
+      minSubscribers, 
+      maxSubscribers, 
+      includeShorts, 
+      maxResults, 
+      country, 
+      language,
+      sortBy 
+    } = await req.json();
 
     if (!keyword) {
       throw new Error("Palavra-chave é obrigatória");
@@ -117,13 +128,29 @@ serve(async (req) => {
       results = results.filter(video => video.viewCount >= minViews);
     }
     
+    if (maxViews) {
+      results = results.filter(video => video.viewCount <= maxViews);
+    }
+    
     if (minSubscribers) {
       results = results.filter(video => video.subscriberCount >= minSubscribers);
+    }
+    
+    if (maxSubscribers) {
+      results = results.filter(video => video.subscriberCount <= maxSubscribers);
     }
     
     if (includeShorts === false) {
       results = results.filter(video => !video.isShort);
     }
+
+    // Aplicar ordenação conforme solicitado
+    if (sortBy === "views") {
+      results = results.sort((a, b) => b.viewCount - a.viewCount);
+    } else if (sortBy === "subscribers") {
+      results = results.sort((a, b) => b.subscriberCount - a.subscriberCount);
+    }
+    // Se for "relevance", não precisamos ordenar pois a API já retorna em ordem de relevância
 
     console.log(`Encontrados ${results.length} resultados após filtragem`);
 

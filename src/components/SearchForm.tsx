@@ -34,11 +34,14 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
   
   const [filters, setFilters] = useState({
     minViews: 10000,
+    maxViews: null,
     maxResults: 20,
     minSubscribers: 1000,
+    maxSubscribers: null,
     language: 'pt',
     country: 'BR',
-    includeShorts: true
+    includeShorts: true,
+    sortBy: 'relevance'
   });
 
   const handleFilterChange = (key: string, value: any) => {
@@ -69,11 +72,14 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
         body: { 
           keyword, 
           minViews: filters.minViews,
+          maxViews: filters.maxViews,
           minSubscribers: filters.minSubscribers,
+          maxSubscribers: filters.maxSubscribers,
           includeShorts: filters.includeShorts,
           maxResults: filters.maxResults,
           country: filters.country,
-          language: filters.language
+          language: filters.language,
+          sortBy: filters.sortBy
         }
       });
       
@@ -203,39 +209,104 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium">Mínimo de visualizações</label>
+                  <label className="text-sm font-medium">Classificar por</label>
                   <Select 
-                    value={filters.minViews.toString()} 
-                    onValueChange={(value) => handleFilterChange('minViews', parseInt(value))}
+                    value={filters.sortBy} 
+                    onValueChange={(value) => handleFilterChange('sortBy', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Mínimo de visualizações" />
+                      <SelectValue placeholder="Classificar por" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1000">1.000+ visualizações</SelectItem>
-                      <SelectItem value="10000">10.000+ visualizações</SelectItem>
-                      <SelectItem value="100000">100.000+ visualizações</SelectItem>
-                      <SelectItem value="1000000">1.000.000+ visualizações</SelectItem>
+                      <SelectItem value="relevance">Relevância</SelectItem>
+                      <SelectItem value="views">Visualizações</SelectItem>
+                      <SelectItem value="subscribers">Inscritos</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
-                <div>
-                  <label className="text-sm font-medium">Mínimo de inscritos no canal</label>
-                  <Select 
-                    value={filters.minSubscribers.toString()} 
-                    onValueChange={(value) => handleFilterChange('minSubscribers', parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Mínimo de inscritos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1000">1.000+ inscritos</SelectItem>
-                      <SelectItem value="10000">10.000+ inscritos</SelectItem>
-                      <SelectItem value="100000">100.000+ inscritos</SelectItem>
-                      <SelectItem value="1000000">1.000.000+ inscritos</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Visualizações</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Mínimo</label>
+                      <Select 
+                        value={filters.minViews ? filters.minViews.toString() : ''} 
+                        onValueChange={(value) => handleFilterChange('minViews', value ? parseInt(value) : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Mínimo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sem mínimo</SelectItem>
+                          <SelectItem value="1000">1.000+</SelectItem>
+                          <SelectItem value="10000">10.000+</SelectItem>
+                          <SelectItem value="100000">100.000+</SelectItem>
+                          <SelectItem value="1000000">1.000.000+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Máximo</label>
+                      <Select 
+                        value={filters.maxViews ? filters.maxViews.toString() : ''} 
+                        onValueChange={(value) => handleFilterChange('maxViews', value ? parseInt(value) : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Máximo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sem máximo</SelectItem>
+                          <SelectItem value="10000">10.000</SelectItem>
+                          <SelectItem value="100000">100.000</SelectItem>
+                          <SelectItem value="1000000">1.000.000</SelectItem>
+                          <SelectItem value="10000000">10.000.000</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Inscritos no canal</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Mínimo</label>
+                      <Select 
+                        value={filters.minSubscribers ? filters.minSubscribers.toString() : ''} 
+                        onValueChange={(value) => handleFilterChange('minSubscribers', value ? parseInt(value) : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Mínimo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sem mínimo</SelectItem>
+                          <SelectItem value="1000">1.000+</SelectItem>
+                          <SelectItem value="10000">10.000+</SelectItem>
+                          <SelectItem value="100000">100.000+</SelectItem>
+                          <SelectItem value="1000000">1.000.000+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Máximo</label>
+                      <Select 
+                        value={filters.maxSubscribers ? filters.maxSubscribers.toString() : ''} 
+                        onValueChange={(value) => handleFilterChange('maxSubscribers', value ? parseInt(value) : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Máximo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sem máximo</SelectItem>
+                          <SelectItem value="10000">10.000</SelectItem>
+                          <SelectItem value="100000">100.000</SelectItem>
+                          <SelectItem value="1000000">1.000.000</SelectItem>
+                          <SelectItem value="10000000">10.000.000</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
                 
                 <Accordion type="single" collapsible className="w-full">
