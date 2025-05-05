@@ -160,7 +160,7 @@ const SearchForm = ({ onSearch }: { onSearch: (filters: any, results: any[], loa
                 toast({
                   title: "Atenção",
                   description: "Os resultados foram encontrados mas não puderam ser salvos no histórico.",
-                  variant: "warning",
+                  variant: "default",
                 });
               } else {
                 console.log('Resultados da pesquisa salvos com sucesso!');
