@@ -14,6 +14,7 @@ import LoadingState from "@/components/history/LoadingState";
 import { SearchHistoryItem } from "@/components/history/types";
 import { formatDate, getFilterData } from "@/components/history/utils";
 import { AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import VersionBadge from '@/components/VersionBadge';
 
 const History = () => {
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
@@ -249,13 +250,16 @@ const History = () => {
 
       <main className="flex-grow container px-4 md:px-6 py-8">
         <div className="flex flex-col space-y-4">
-          <HistoryHeader 
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            isBulkDeleteDialogOpen={isBulkDeleteDialogOpen}
-            setIsBulkDeleteDialogOpen={setIsBulkDeleteDialogOpen}
-            onClearHistory={handleClearHistory}
-          />
+          <div className="flex justify-between items-center">
+            <HistoryHeader 
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              isBulkDeleteDialogOpen={isBulkDeleteDialogOpen}
+              setIsBulkDeleteDialogOpen={setIsBulkDeleteDialogOpen}
+              onClearHistory={handleClearHistory}
+            />
+            <VersionBadge className="ml-2" />
+          </div>
 
           {isLoading ? (
             <LoadingState />

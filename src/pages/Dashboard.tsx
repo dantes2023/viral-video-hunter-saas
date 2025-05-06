@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, TrendingUp, BarChart2, Clock, Search } from 'lucide-react';
@@ -7,6 +6,7 @@ import SearchForm from "@/components/search/SearchForm";
 import VideoResults from "@/components/VideoResults";
 import { VideoData } from "@/components/video/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import VersionBadge from '@/components/VersionBadge';
 
 // Formatador de números
 const formatNumber = (num: number): string => {
@@ -69,7 +69,10 @@ const Dashboard = () => {
       <Navigation />
       
       <main className="flex-grow container px-4 md:px-6 py-8">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <VersionBadge className="ml-2" />
+        </div>
         
         {/* Status Cards */}
         {hasSearched && !isLoading && videos.length > 0 && (

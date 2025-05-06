@@ -1,4 +1,8 @@
+
 # Welcome to your Lovable project
+
+## Version Info
+**Current Version**: v1.1.0 beta
 
 ## Project info
 
@@ -71,3 +75,15 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Version History
+
+### v1.1.0 (Current)
+- Added version tracking system
+- Added version badge to UI
+- Updated dashboard and history pages
+
+### v1.0.0 
+- Initial release
+- Basic search functionality
+- History tracking
