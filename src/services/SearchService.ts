@@ -63,18 +63,19 @@ export const saveSearchToHistory = async (
   if (!userId) return null;
   
   try {
+    // Fix: Convert minViews and minSubscribers to numbers
     const { data, error } = await supabase
       .from('searches')
       .insert({
         user_id: userId,
         keyword,
-        min_views: filters.minViews,
-        min_subscribers: filters.minSubscribers,
+        min_views: filters.minViews ? Number(filters.minViews) : null,
+        min_subscribers: filters.minSubscribers ? Number(filters.minSubscribers) : null,
         country: filters.country,
         language: filters.language,
         include_shorts: filters.includeShorts,
-        max_results: filters.maxResults,
-        channel_age: filters.channelAge
+        max_results: filters.maxResults ? Number(filters.maxResults) : null,
+        channel_age: filters.channelAge ? Number(filters.channelAge) : null
       })
       .select('id')
       .single();
