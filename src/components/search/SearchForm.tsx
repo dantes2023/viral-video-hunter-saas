@@ -58,11 +58,14 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
       // Buscar vídeos usando o serviço
       const results = await searchVideos({ keyword, filters });
       
-      // Salvar pesquisa no histórico
+      // Salvar pesquisa no histórico e obter o ID da pesquisa
+      console.log("Salvando pesquisa no histórico...");
       const searchId = await saveSearchToHistory(user?.id, keyword, filters);
+      console.log("ID da pesquisa:", searchId);
       
-      // Salvar resultados da pesquisa
+      // Salvar resultados da pesquisa se tiver um ID de pesquisa
       if (searchId) {
+        console.log(`Tentando salvar ${results.length} resultados para a pesquisa ${searchId}`);
         const saved = await saveSearchResults(searchId, results);
         
         if (!saved) {
@@ -76,6 +79,15 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
           toast({
             title: "Sucesso",
             description: `${results.length} resultados salvos no histórico.`,
+          });
+        }
+      } else {
+        console.log("Não foi possível obter um ID de pesquisa válido");
+        if (user?.id) {
+          toast({
+            title: "Atenção",
+            description: "Não foi possível salvar a pesquisa no histórico.",
+            variant: "default",
           });
         }
       }
