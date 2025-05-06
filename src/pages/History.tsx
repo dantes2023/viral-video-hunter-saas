@@ -1,32 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, ExternalLink, Trash, Download, Search as SearchIcon, ArrowUpRight } from 'lucide-react';
 import Navigation from "@/components/Navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import VideoResults from "@/components/VideoResults";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-
-// Define the interface for search history items
-interface SearchHistoryItem {
-  id: string;
-  keyword: string;
-  created_at: string;
-  min_views: number;
-  min_subscribers: number;
-  country: string;
-  language: string;
-  include_shorts: boolean;
-  max_results: number;
-  channel_age: string | null; // String | null to match DB
-  user_id: string;
-}
+import SearchTable from "@/components/history/SearchTable";
+import EmptyHistory from "@/components/history/EmptyHistory";
+import HistoryHeader from "@/components/history/HistoryHeader";
+import LoadingState from "@/components/history/LoadingState";
+import { SearchHistoryItem } from "@/components/history/types";
+import { formatDate, formatFilters } from "@/components/history/utils";
 
 const History = () => {
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
@@ -256,151 +241,32 @@ const History = () => {
     }
   };
 
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-  
-  const formatFilters = (searchItem: SearchHistoryItem): React.ReactNode => {
-    const filterBadges = [];
-    
-    if (searchItem.country) {
-      filterBadges.push(
-        <span key="country" className="inline-flex items-center mr-2 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-          {searchItem.country}
-        </span>
-      );
-    }
-    
-    if (searchItem.min_views) {
-      filterBadges.push(
-        <span key="views" className="inline-flex items-center mr-2 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-          +{new Intl.NumberFormat('pt-BR').format(searchItem.min_views)} views
-        </span>
-      );
-    }
-    
-    return filterBadges;
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Navigation />
 
       <main className="flex-grow container px-4 md:px-6 py-8">
         <div className="flex flex-col space-y-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Histórico de Buscas</h1>
-            <Link to="/dashboard">
-              <Button variant="outline" className="flex gap-2 items-center">
-                <ArrowRight size={16} className="rotate-180" />
-                Voltar ao Dashboard
-              </Button>
-            </Link>
-          </div>
-
-          <div className="flex justify-between items-center gap-4 flex-wrap">
-            <div className="relative w-full max-w-md">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Buscar no histórico..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="text-white">
-                  Limpar histórico
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Limpar histórico de buscas</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja apagar todo o histórico de buscas? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearHistory}>Limpar histórico</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          <HistoryHeader 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            isBulkDeleteDialogOpen={isBulkDeleteDialogOpen}
+            setIsBulkDeleteDialogOpen={setIsBulkDeleteDialogOpen}
+            onClearHistory={handleClearHistory}
+          />
 
           {isLoading ? (
-            <div className="text-center py-10">
-              <SearchIcon className="h-10 w-10 text-gray-400 mx-auto mb-4 animate-pulse" />
-              <p className="text-lg text-gray-500">Carregando histórico...</p>
-            </div>
+            <LoadingState />
           ) : filteredHistory.length === 0 ? (
-            <div className="text-center py-20">
-              <SearchIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Nenhum histórico encontrado</h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                {searchTerm ? "Nenhum resultado encontrado para sua busca." : "Suas buscas serão salvas aqui para facilitar o acesso e a referência futura."}
-              </p>
-            </div>
+            <EmptyHistory searchTerm={searchTerm} />
           ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-1/3">Palavra-chave</TableHead>
-                    <TableHead className="w-1/4">Data</TableHead>
-                    <TableHead className="w-1/4">Filtros</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredHistory.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell 
-                        className="font-medium cursor-pointer hover:text-brand-500 transition-colors"
-                        onClick={() => handleViewResults(item)}
-                      >
-                        {item.keyword}
-                      </TableCell>
-                      <TableCell>{formatDate(item.created_at)}</TableCell>
-                      <TableCell>{formatFilters(item)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleViewResults(item)}
-                            className="h-8 w-8"
-                            title="Ver resultados"
-                          >
-                            <ArrowUpRight size={18} />
-                          </Button>
-                          
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleDeleteSearch(item.id)}
-                            title="Apagar busca"
-                          >
-                            <Trash size={18} />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <SearchTable 
+              items={filteredHistory}
+              onViewResults={handleViewResults}
+              onDeleteSearch={handleDeleteSearch}
+              formatDate={formatDate}
+              formatFilters={formatFilters}
+            />
           )}
         </div>
       </main>
