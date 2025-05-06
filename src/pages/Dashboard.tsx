@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { Eye, TrendingUp, BarChart2, Clock, Search } from 'lucide-react';
 import Navigation from "@/components/Navigation";
 import SearchForm from "@/components/search/SearchForm";
-import VideoResults, { VideoData } from "@/components/VideoResults";
+import VideoResults from "@/components/VideoResults";
+import { VideoData } from "@/components/video/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Formatador de números
