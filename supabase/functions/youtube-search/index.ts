@@ -35,6 +35,10 @@ serve(async (req) => {
       throw new Error("Palavra-chave é obrigatória");
     }
 
+    console.log("Recebendo filtros:", {
+      minViews, maxViews, minSubscribers, maxSubscribers, includeShorts, channelAge
+    });
+
     // Primeiro, busca por vídeos com a palavra-chave
     const searchUrl = new URL(`${YOUTUBE_API_BASE_URL}/search`);
     searchUrl.searchParams.append("part", "snippet");
@@ -161,33 +165,46 @@ serve(async (req) => {
       };
     });
 
+    console.log(`Resultados antes de aplicar filtros: ${results.length}`);
+    console.log(`Aplicando filtros - Min views: ${minViews}, Max views: ${maxViews}, Min subs: ${minSubscribers}, Max subs: ${maxSubscribers}`);
+
     // Aplicar filtros
     if (minViews) {
-      results = results.filter(video => video.viewCount >= minViews);
+      results = results.filter(video => video.viewCount >= Number(minViews));
+      console.log(`Após filtro minViews: ${results.length} resultados`);
     }
     
     if (maxViews) {
-      results = results.filter(video => video.viewCount <= maxViews);
+      results = results.filter(video => video.viewCount <= Number(maxViews));
+      console.log(`Após filtro maxViews: ${results.length} resultados`);
     }
     
     if (minSubscribers) {
-      results = results.filter(video => video.subscriberCount >= minSubscribers);
+      results = results.filter(video => video.subscriberCount >= Number(minSubscribers));
+      console.log(`Após filtro minSubscribers: ${results.length} resultados`);
     }
     
     if (maxSubscribers) {
-      results = results.filter(video => video.subscriberCount <= maxSubscribers);
+      results = results.filter(video => video.subscriberCount <= Number(maxSubscribers));
+      console.log(`Após filtro maxSubscribers: ${results.length} resultados`);
     }
     
     if (includeShorts === false) {
       results = results.filter(video => !video.isShort);
+      console.log(`Após filtro includeShorts: ${results.length} resultados`);
     }
     
     // Filtro de idade do canal
-    if (channelMaxAge) {
+    if (channelAge) {
+      // CORREÇÃO: Estamos verificando se o canal foi criado ANTES da data limite
+      // Canais mais recentes têm data de criação POSTERIOR à data limite
       results = results.filter(video => {
         if (!video.channelPublishedAt) return true; // Se não tiver informação, mantém
-        return new Date(video.channelPublishedAt) >= new Date(channelMaxAge);
+        
+        // Correção: compara se a data de publicação do canal é MAIOR QUE (mais recente) que a data limite
+        return new Date(video.channelPublishedAt) > new Date(channelMaxAge);
       });
+      console.log(`Após filtro channelAge: ${results.length} resultados`);
     }
 
     // Aplicar ordenação conforme solicitado

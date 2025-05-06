@@ -31,12 +31,12 @@ export const searchVideos = async (
   const { data, error } = await supabase.functions.invoke('youtube-search', {
     body: { 
       keyword, 
-      minViews: filters.minViews,
-      maxViews: filters.maxViews,
-      minSubscribers: filters.minSubscribers,
-      maxSubscribers: filters.maxSubscribers,
+      minViews: filters.minViews ? Number(filters.minViews) : null,
+      maxViews: filters.maxViews ? Number(filters.maxViews) : null,
+      minSubscribers: filters.minSubscribers ? Number(filters.minSubscribers) : null,
+      maxSubscribers: filters.maxSubscribers ? Number(filters.maxSubscribers) : null,
       includeShorts: filters.includeShorts,
-      maxResults: filters.maxResults,
+      maxResults: filters.maxResults ? Number(filters.maxResults) : null,
       country: filters.country,
       language: filters.language,
       sortBy: filters.sortBy,
