@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, TrendingUp, BarChart2, Clock, Search } from 'lucide-react';
 import Navigation from "@/components/Navigation";
-import SearchForm from "@/components/SearchForm";
+import SearchForm from "@/components/search/SearchForm";
 import VideoResults, { VideoData } from "@/components/VideoResults";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
