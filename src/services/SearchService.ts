@@ -45,10 +45,12 @@ export const searchVideos = async (
   });
 
   if (error) {
+    console.error('Erro ao buscar vídeos:', error);
     throw new Error(error.message || 'Erro ao buscar vídeos');
   }
 
   if (!data.success) {
+    console.error('Erro na resposta da API:', data.error);
     throw new Error(data.error || 'Erro ao buscar vídeos');
   }
 
@@ -60,23 +62,35 @@ export const saveSearchToHistory = async (
   keyword: string, 
   filters: SearchFilters
 ): Promise<string | null> => {
-  if (!userId) return null;
+  if (!userId) {
+    console.log("Usuário não está autenticado, não será salvo no histórico");
+    return null;
+  }
   
   try {
-    // Corrigindo conversão de tipos para que correspondam aos tipos na tabela
+    console.log("Iniciando salvamento no histórico para usuário:", userId);
+    console.log("Filtros recebidos:", filters);
+    
+    // Preparando dados para inserção
+    const searchData = {
+      user_id: userId,
+      keyword,
+      min_views: filters.minViews ? Number(filters.minViews) : null,
+      min_subscribers: filters.minSubscribers ? Number(filters.minSubscribers) : null,
+      country: filters.country || null,
+      language: filters.language || null,
+      include_shorts: filters.includeShorts !== undefined ? filters.includeShorts : null,
+      max_results: filters.maxResults ? Number(filters.maxResults) : null,
+      // Converter channel_age para número se não for nulo
+      channel_age: filters.channelAge ? 
+        Number(filters.channelAge.replace(/\D/g, '')) : null
+    };
+    
+    console.log("Dados preparados para inserção:", searchData);
+    
     const { data, error } = await supabase
       .from('searches')
-      .insert({
-        user_id: userId,
-        keyword,
-        min_views: filters.minViews ? Number(filters.minViews) : null,
-        min_subscribers: filters.minSubscribers ? Number(filters.minSubscribers) : null,
-        country: filters.country || null,
-        language: filters.language || null,
-        include_shorts: filters.includeShorts !== undefined ? filters.includeShorts : null,
-        max_results: filters.maxResults ? Number(filters.maxResults) : null,
-        channel_age: filters.channelAge ? Number(filters.channelAge.replace(/\D/g, '')) : null
-      })
+      .insert(searchData)
       .select('id')
       .single();
       
@@ -85,9 +99,10 @@ export const saveSearchToHistory = async (
       return null;
     }
     
+    console.log("Pesquisa salva com sucesso, ID:", data?.id);
     return data?.id || null;
   } catch (error) {
-    console.error('Erro ao inserir pesquisa:', error);
+    console.error('Exceção ao inserir pesquisa:', error);
     return null;
   }
 };
@@ -96,14 +111,24 @@ export const saveSearchResults = async (
   searchId: string | null, 
   results: SearchResult[]
 ): Promise<boolean> => {
-  if (!searchId || !results || results.length === 0) {
-    console.log("Nenhum resultado para salvar ou searchId não disponível");
+  if (!searchId) {
+    console.log("ID de pesquisa não disponível, resultados não serão salvos");
+    return false;
+  }
+  
+  if (!results || results.length === 0) {
+    console.log("Nenhum resultado para salvar");
     return false;
   }
   
   try {
-    // Criando lotes de 100 resultados para evitar problemas com tamanho de payload
-    const batchSize = 100;
+    console.log(`Tentando salvar ${results.length} resultados para a pesquisa ${searchId}`);
+    
+    // Verificando a estrutura dos resultados
+    console.log("Amostra do primeiro resultado:", JSON.stringify(results[0], null, 2));
+    
+    // Criando lotes de 50 resultados para evitar problemas com tamanho de payload
+    const batchSize = 50;
     const batches = [];
 
     // Dividir os resultados em lotes
@@ -111,11 +136,13 @@ export const saveSearchResults = async (
       batches.push(results.slice(i, i + batchSize));
     }
 
-    console.log(`Salvando ${results.length} resultados em ${batches.length} lotes`);
+    console.log(`Dividindo ${results.length} resultados em ${batches.length} lotes de até ${batchSize} itens`);
     
     // Processar cada lote separadamente
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
+      console.log(`Processando lote ${batchIndex + 1} com ${batch.length} resultados`);
+      
       const formattedResults = batch.map(item => ({
         search_id: searchId,
         video_id: item.id || '',
@@ -130,6 +157,8 @@ export const saveSearchResults = async (
         subscribers: item.subscriberCount || 0,
         published_at: item.publishedAt || null
       }));
+      
+      console.log(`Lote ${batchIndex + 1} formatado, exemplo:`, JSON.stringify(formattedResults[0], null, 2));
       
       const { error } = await supabase
         .from('search_results')

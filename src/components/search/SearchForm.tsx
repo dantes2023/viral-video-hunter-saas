@@ -55,13 +55,16 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
     onSearch({ keyword, ...filters }, [], true);
     
     try {
+      console.log("Iniciando pesquisa por:", keyword, "com filtros:", filters);
+      
       // Buscar vídeos usando o serviço
       const results = await searchVideos({ keyword, filters });
+      console.log(`Encontrados ${results.length} resultados`);
       
       // Salvar pesquisa no histórico e obter o ID da pesquisa
-      console.log("Salvando pesquisa no histórico...");
+      console.log("Tentando salvar pesquisa no histórico para usuário:", user?.id);
       const searchId = await saveSearchToHistory(user?.id, keyword, filters);
-      console.log("ID da pesquisa:", searchId);
+      console.log("ID da pesquisa retornado:", searchId);
       
       // Salvar resultados da pesquisa se tiver um ID de pesquisa
       if (searchId) {
@@ -69,6 +72,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
         const saved = await saveSearchResults(searchId, results);
         
         if (!saved) {
+          console.error("Falha ao salvar resultados no histórico");
           toast({
             title: "Atenção",
             description: "Os resultados foram encontrados mas não puderam ser salvos no histórico.",
@@ -81,15 +85,13 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
             description: `${results.length} resultados salvos no histórico.`,
           });
         }
-      } else {
-        console.log("Não foi possível obter um ID de pesquisa válido");
-        if (user?.id) {
-          toast({
-            title: "Atenção",
-            description: "Não foi possível salvar a pesquisa no histórico.",
-            variant: "default",
-          });
-        }
+      } else if (user?.id) {
+        console.error("Não foi possível obter um ID de pesquisa válido");
+        toast({
+          title: "Atenção",
+          description: "Não foi possível salvar a pesquisa no histórico.",
+          variant: "default",
+        });
       }
       
       // Transformar resultados no formato esperado pelo VideoResults
@@ -114,6 +116,8 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
           title: "Nenhum resultado encontrado",
           description: "Tente ajustar seus filtros ou usar uma palavra-chave diferente.",
         });
+      } else {
+        console.log(`Exibindo ${formattedResults.length} resultados formatados`);
       }
     } catch (error: any) {
       console.error('Erro ao buscar vídeos:', error);
