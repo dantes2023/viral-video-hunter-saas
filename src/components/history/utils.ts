@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { SearchHistoryItem } from './types';
 
 export const formatDate = (dateString: string): string => {
@@ -13,24 +12,23 @@ export const formatDate = (dateString: string): string => {
   });
 };
 
-export const formatFilters = (searchItem: SearchHistoryItem): React.ReactNode => {
-  const filterBadges = [];
+// This function returns filter data that will be transformed to badges in the component
+export const getFilterData = (searchItem: SearchHistoryItem): {id: string, label: string}[] => {
+  const filters = [];
   
   if (searchItem.country) {
-    filterBadges.push(
-      <span key="country" className="inline-flex items-center mr-2 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-        {searchItem.country}
-      </span>
-    );
+    filters.push({
+      id: 'country',
+      label: searchItem.country
+    });
   }
   
   if (searchItem.min_views) {
-    filterBadges.push(
-      <span key="views" className="inline-flex items-center mr-2 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-        +{new Intl.NumberFormat('pt-BR').format(searchItem.min_views)} views
-      </span>
-    );
+    filters.push({
+      id: 'views',
+      label: `+${new Intl.NumberFormat('pt-BR').format(searchItem.min_views)} views`
+    });
   }
   
-  return filterBadges;
+  return filters;
 };

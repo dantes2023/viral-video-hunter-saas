@@ -5,13 +5,15 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { Search as SearchIcon } from 'lucide-react';
 import VideoResults from "@/components/VideoResults";
 import SearchTable from "@/components/history/SearchTable";
 import EmptyHistory from "@/components/history/EmptyHistory";
 import HistoryHeader from "@/components/history/HistoryHeader";
 import LoadingState from "@/components/history/LoadingState";
 import { SearchHistoryItem } from "@/components/history/types";
-import { formatDate, formatFilters } from "@/components/history/utils";
+import { formatDate, getFilterData } from "@/components/history/utils";
+import { AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
 const History = () => {
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
@@ -265,7 +267,7 @@ const History = () => {
               onViewResults={handleViewResults}
               onDeleteSearch={handleDeleteSearch}
               formatDate={formatDate}
-              formatFilters={formatFilters}
+              getFilterData={getFilterData}
             />
           )}
         </div>

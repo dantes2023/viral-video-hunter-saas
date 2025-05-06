@@ -4,13 +4,14 @@ import { ArrowUpRight, Trash } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { SearchHistoryItem } from './types';
+import { Badge } from '@/components/ui/badge';
 
 interface SearchTableProps {
   items: SearchHistoryItem[];
   onViewResults: (item: SearchHistoryItem) => void;
   onDeleteSearch: (id: string) => void;
   formatDate: (date: string) => string;
-  formatFilters: (item: SearchHistoryItem) => React.ReactNode;
+  getFilterData: (item: SearchHistoryItem) => {id: string, label: string}[];
 }
 
 const SearchTable: React.FC<SearchTableProps> = ({
@@ -18,7 +19,7 @@ const SearchTable: React.FC<SearchTableProps> = ({
   onViewResults,
   onDeleteSearch,
   formatDate,
-  formatFilters
+  getFilterData
 }) => {
   return (
     <div className="rounded-md border overflow-hidden">
@@ -41,7 +42,17 @@ const SearchTable: React.FC<SearchTableProps> = ({
                 {item.keyword}
               </TableCell>
               <TableCell>{formatDate(item.created_at)}</TableCell>
-              <TableCell>{formatFilters(item)}</TableCell>
+              <TableCell>
+                {getFilterData(item).map(filter => (
+                  <Badge 
+                    key={filter.id}
+                    variant="secondary" 
+                    className="mr-2 bg-gray-100 text-gray-800 hover:bg-gray-100"
+                  >
+                    {filter.label}
+                  </Badge>
+                ))}
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button 
