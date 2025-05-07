@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SearchFilters } from '@/components/search/FilterPopover';
 
@@ -28,13 +27,15 @@ interface SearchResult {
 export const searchVideos = async (
   { keyword, filters }: SearchPayload
 ): Promise<SearchResult[]> => {
+  console.log("Enviando filtros para API:", JSON.stringify(filters, null, 2));
+  
   const { data, error } = await supabase.functions.invoke('youtube-search', {
     body: { 
       keyword, 
-      minViews: filters.minViews ? Number(filters.minViews) : null,
-      maxViews: filters.maxViews ? Number(filters.maxViews) : null,
-      minSubscribers: filters.minSubscribers ? Number(filters.minSubscribers) : null,
-      maxSubscribers: filters.maxSubscribers ? Number(filters.maxSubscribers) : null,
+      minViews: filters.minViews,  // Já é número ou null
+      maxViews: filters.maxViews,  // Já é número ou null
+      minSubscribers: filters.minSubscribers, // Já é número ou null
+      maxSubscribers: filters.maxSubscribers, // Já é número ou null
       includeShorts: filters.includeShorts,
       maxResults: filters.maxResults ? Number(filters.maxResults) : null,
       country: filters.country,

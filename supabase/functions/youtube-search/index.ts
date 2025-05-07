@@ -55,8 +55,8 @@ serve(async (req) => {
       searchUrl.searchParams.append("relevanceLanguage", language);
     }
 
-    // Se tiver filtro de idade do canal, calcula a data máxima de publicação
-    let channelMaxAge = null;
+    // Se tiver filtro de idade do canal, calcula a data máxima de criação
+    let channelMaxDate = null;
     if (channelAge) {
       const now = new Date();
       
@@ -64,28 +64,29 @@ serve(async (req) => {
       if (channelAge === "1day") {
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        channelMaxAge = yesterday.toISOString();
+        channelMaxDate = yesterday;
       } else if (channelAge === "7days") {
         const lastWeek = new Date(now);
         lastWeek.setDate(lastWeek.getDate() - 7);
-        channelMaxAge = lastWeek.toISOString();
+        channelMaxDate = lastWeek;
       } else if (channelAge === "15days") {
         const twoWeeksAgo = new Date(now);
         twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 15);
-        channelMaxAge = twoWeeksAgo.toISOString();
+        channelMaxDate = twoWeeksAgo;
       } else if (channelAge === "30days") {
         const monthAgo = new Date(now);
         monthAgo.setDate(monthAgo.getDate() - 30);
-        channelMaxAge = monthAgo.toISOString();
+        channelMaxDate = monthAgo;
       } else if (channelAge === "2months") {
         const twoMonthsAgo = new Date(now);
         twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-        channelMaxAge = twoMonthsAgo.toISOString();
+        channelMaxDate = twoMonthsAgo;
       } else if (channelAge === "3months") {
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        channelMaxAge = threeMonthsAgo.toISOString();
+        channelMaxDate = threeMonthsAgo;
       }
+      console.log("Data limite calculada para idade do canal:", channelMaxDate);
     }
 
     console.log("Buscando vídeos com:", keyword);
@@ -96,6 +97,24 @@ serve(async (req) => {
     }
     
     const searchData = await searchResponse.json();
+    
+    if (!searchData.items || searchData.items.length === 0) {
+      console.log("Nenhum vídeo encontrado na pesquisa inicial");
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          count: 0,
+          results: [] 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json" 
+          } 
+        }
+      );
+    }
+    
     const videoIds = searchData.items.map((item: any) => item.id.videoId).join(",");
 
     // Em seguida, busca estatísticas detalhadas para os vídeos encontrados
@@ -112,6 +131,23 @@ serve(async (req) => {
     }
     
     const videosData = await videosResponse.json();
+    
+    if (!videosData.items || videosData.items.length === 0) {
+      console.log("Nenhum detalhe de vídeo encontrado");
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          count: 0,
+          results: [] 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json" 
+          } 
+        }
+      );
+    }
 
     // Para cada vídeo, precisamos buscar as informações do canal
     const channelIds = [...new Set(videosData.items.map((item: any) => item.snippet.channelId))].join(",");
@@ -129,6 +165,23 @@ serve(async (req) => {
     
     const channelsData = await channelsResponse.json();
     
+    if (!channelsData.items) {
+      console.log("Nenhuma informação de canal encontrada");
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          count: 0,
+          results: [] 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json" 
+          } 
+        }
+      );
+    }
+    
     // Criar um mapa de canais para fácil acesso
     const channelsMap = channelsData.items.reduce((acc: any, channel: any) => {
       acc[channel.id] = channel;
@@ -144,7 +197,7 @@ serve(async (req) => {
       const viewCount = parseInt(video.statistics.viewCount || "0", 10);
       const subscriberCount = parseInt(channel?.statistics?.subscriberCount || "0", 10);
       
-      // Informações do canal, incluindo data de criação se disponível
+      // Informações do canal, incluindo data de criação
       const channelPublishedAt = channel?.snippet?.publishedAt;
 
       return {
@@ -166,27 +219,39 @@ serve(async (req) => {
     });
 
     console.log(`Resultados antes de aplicar filtros: ${results.length}`);
+    
+    // Log de valores antes da filtragem para ajudar na depuração
     console.log(`Aplicando filtros - Min views: ${minViews}, Max views: ${maxViews}, Min subs: ${minSubscribers}, Max subs: ${maxSubscribers}`);
+    
+    // Debug: verificar valores convertidos corretamente
+    const numMinViews = minViews !== null ? Number(minViews) : null;
+    const numMaxViews = maxViews !== null ? Number(maxViews) : null;
+    const numMinSubs = minSubscribers !== null ? Number(minSubscribers) : null;
+    const numMaxSubs = maxSubscribers !== null ? Number(maxSubscribers) : null;
+    
+    console.log("Valores convertidos para número:", {
+      numMinViews, numMaxViews, numMinSubs, numMaxSubs
+    });
 
     // Aplicar filtros
-    if (minViews) {
-      results = results.filter(video => video.viewCount >= Number(minViews));
-      console.log(`Após filtro minViews: ${results.length} resultados`);
+    if (numMinViews !== null) {
+      results = results.filter(video => video.viewCount >= numMinViews);
+      console.log(`Após filtro minViews (${numMinViews}): ${results.length} resultados`);
     }
     
-    if (maxViews) {
-      results = results.filter(video => video.viewCount <= Number(maxViews));
-      console.log(`Após filtro maxViews: ${results.length} resultados`);
+    if (numMaxViews !== null) {
+      results = results.filter(video => video.viewCount <= numMaxViews);
+      console.log(`Após filtro maxViews (${numMaxViews}): ${results.length} resultados`);
     }
     
-    if (minSubscribers) {
-      results = results.filter(video => video.subscriberCount >= Number(minSubscribers));
-      console.log(`Após filtro minSubscribers: ${results.length} resultados`);
+    if (numMinSubs !== null) {
+      results = results.filter(video => video.subscriberCount >= numMinSubs);
+      console.log(`Após filtro minSubscribers (${numMinSubs}): ${results.length} resultados`);
     }
     
-    if (maxSubscribers) {
-      results = results.filter(video => video.subscriberCount <= Number(maxSubscribers));
-      console.log(`Após filtro maxSubscribers: ${results.length} resultados`);
+    if (numMaxSubs !== null) {
+      results = results.filter(video => video.subscriberCount <= numMaxSubs);
+      console.log(`Após filtro maxSubscribers (${numMaxSubs}): ${results.length} resultados`);
     }
     
     if (includeShorts === false) {
@@ -195,14 +260,22 @@ serve(async (req) => {
     }
     
     // Filtro de idade do canal
-    if (channelAge) {
-      // CORREÇÃO: Estamos verificando se o canal foi criado ANTES da data limite
-      // Canais mais recentes têm data de criação POSTERIOR à data limite
+    if (channelMaxDate) {
+      console.log("Aplicando filtro de idade do canal, data limite:", channelMaxDate);
+      
       results = results.filter(video => {
-        if (!video.channelPublishedAt) return true; // Se não tiver informação, mantém
+        if (!video.channelPublishedAt) return false; // Se não tiver informação, exclui
         
-        // Correção: compara se a data de publicação do canal é MAIOR QUE (mais recente) que a data limite
-        return new Date(video.channelPublishedAt) > new Date(channelMaxAge);
+        // CORREÇÃO: Estamos procurando canais MAIS RECENTES que a data limite
+        // Ou seja, canais criados DEPOIS da data limite (channelMaxDate)
+        const channelDate = new Date(video.channelPublishedAt);
+        const isRecent = channelDate >= channelMaxDate;
+        
+        if (!isRecent) {
+          console.log(`Canal ${video.channelTitle} (${video.channelPublishedAt}) é mais antigo que ${channelMaxDate}`);
+        }
+        
+        return isRecent;
       });
       console.log(`Após filtro channelAge: ${results.length} resultados`);
     }
