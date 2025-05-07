@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SearchFilters } from '@/components/search/FilterPopover';
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -47,11 +48,14 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   open, 
   onOpenChange 
 }) => {
+  // Estado para valores personalizados
   const [customMinViews, setCustomMinViews] = useState<string>('');
   const [customMaxViews, setCustomMaxViews] = useState<string>('');
   const [customMinSubs, setCustomMinSubs] = useState<string>('');
   const [customMaxSubs, setCustomMaxSubs] = useState<string>('');
+  const [customMaxResults, setCustomMaxResults] = useState<string>('');
   
+  // Handler para mudança de valores personalizados
   const handleCustomValueChange = (key: string, value: string) => {
     // Permitir apenas números
     if (value === '' || /^\d+$/.test(value)) {
@@ -59,6 +63,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
       if (key === 'maxViews') setCustomMaxViews(value);
       if (key === 'minSubscribers') setCustomMinSubs(value);
       if (key === 'maxSubscribers') setCustomMaxSubs(value);
+      if (key === 'maxResults') setCustomMaxResults(value);
       
       // Converter para número ou null
       const numValue = value === '' ? null : parseInt(value);
@@ -85,8 +90,15 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
           <div>
             <label className="text-sm font-medium">Quantidade de resultados</label>
             <Select 
-              value={filters.maxResults.toString()} 
-              onValueChange={(value) => onChange('maxResults', parseInt(value))}
+              value={filters.maxResults && !customMaxResults ? filters.maxResults.toString() : customMaxResults ? "custom" : "20"} 
+              onValueChange={(value) => {
+                if (value === "custom") {
+                  setCustomMaxResults('');
+                } else {
+                  setCustomMaxResults('');
+                  onChange('maxResults', parseInt(value));
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Quantidade de resultados" />
@@ -95,8 +107,19 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                 <SelectItem value="10">10 vídeos</SelectItem>
                 <SelectItem value="20">20 vídeos</SelectItem>
                 <SelectItem value="50">50 vídeos</SelectItem>
+                <SelectItem value="custom">Valor personalizado</SelectItem>
               </SelectContent>
             </Select>
+            
+            {customMaxResults === "custom" && (
+              <Input
+                type="text"
+                placeholder="Digite a quantidade de resultados"
+                value={customMaxResults}
+                onChange={(e) => handleCustomValueChange('maxResults', e.target.value)}
+                className="mt-1"
+              />
+            )}
           </div>
           
           <div>
@@ -145,7 +168,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                   </SelectContent>
                 </Select>
                 
-                {filters.minViews !== null && customMinViews === "custom" && (
+                {filters.minViews === null && customMinViews === "custom" && (
                   <Input
                     type="text"
                     placeholder="Digite o valor mínimo"
@@ -181,7 +204,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                   </SelectContent>
                 </Select>
                 
-                {filters.maxViews !== null && customMaxViews === "custom" && (
+                {filters.maxViews === null && customMaxViews === "custom" && (
                   <Input
                     type="text"
                     placeholder="Digite o valor máximo"
@@ -223,7 +246,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                   </SelectContent>
                 </Select>
                 
-                {filters.minSubscribers !== null && customMinSubs === "custom" && (
+                {filters.minSubscribers === null && customMinSubs === "custom" && (
                   <Input
                     type="text"
                     placeholder="Digite o valor mínimo"
@@ -259,7 +282,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                   </SelectContent>
                 </Select>
                 
-                {filters.maxSubscribers !== null && customMaxSubs === "custom" && (
+                {filters.maxSubscribers === null && customMaxSubs === "custom" && (
                   <Input
                     type="text"
                     placeholder="Digite o valor máximo"
