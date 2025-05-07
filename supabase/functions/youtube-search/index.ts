@@ -240,8 +240,20 @@ serve(async (req) => {
     }
     
     if (numMaxViews !== null) {
-      results = results.filter(video => video.viewCount <= numMaxViews);
-      console.log(`Após filtro maxViews (${numMaxViews}): ${results.length} resultados`);
+      // FIX: Se os valores mínimo e máximo forem iguais, não devemos fazer uma comparação estrita
+      if (numMinViews === numMaxViews && numMaxViews !== null) {
+        // Para valores iguais, usamos uma faixa pequena em torno do valor para evitar resultados zero
+        const tolerance = numMaxViews * 0.1; // 10% de tolerância
+        results = results.filter(video => 
+          video.viewCount >= numMaxViews - tolerance && 
+          video.viewCount <= numMaxViews + tolerance
+        );
+        console.log(`Após filtro maxViews (igual a minViews com tolerância): ${results.length} resultados`);
+      } else {
+        // Filtro normal para valores diferentes
+        results = results.filter(video => video.viewCount <= numMaxViews);
+        console.log(`Após filtro maxViews (${numMaxViews}): ${results.length} resultados`);
+      }
     }
     
     if (numMinSubs !== null) {
@@ -259,23 +271,25 @@ serve(async (req) => {
       console.log(`Após filtro includeShorts: ${results.length} resultados`);
     }
     
-    // Filtro de idade do canal
+    // Filtro de idade do canal - FIX: Corrigido para mostrar canais MAIS ANTIGOS que o limite
     if (channelMaxDate) {
       console.log("Aplicando filtro de idade do canal, data limite:", channelMaxDate);
       
       results = results.filter(video => {
         if (!video.channelPublishedAt) return false; // Se não tiver informação, exclui
         
-        // CORREÇÃO: Estamos procurando canais MAIS RECENTES que a data limite
-        // Ou seja, canais criados DEPOIS da data limite (channelMaxDate)
+        // CORREÇÃO: Estamos procurando canais MAIS ANTIGOS que a data limite
+        // Ou seja, canais criados ANTES da data limite (channelMaxDate)
         const channelDate = new Date(video.channelPublishedAt);
-        const isRecent = channelDate >= channelMaxDate;
+        const isOlderThanLimit = channelDate <= channelMaxDate;
         
-        if (!isRecent) {
+        if (!isOlderThanLimit) {
+          console.log(`Canal ${video.channelTitle} (${video.channelPublishedAt}) é mais recente que ${channelMaxDate}`);
+        } else {
           console.log(`Canal ${video.channelTitle} (${video.channelPublishedAt}) é mais antigo que ${channelMaxDate}`);
         }
         
-        return isRecent;
+        return isOlderThanLimit;
       });
       console.log(`Após filtro channelAge: ${results.length} resultados`);
     }
