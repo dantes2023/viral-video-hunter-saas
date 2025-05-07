@@ -1,26 +1,20 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+
+// Importando os componentes de filtro refatorados
+import { useCustomValues } from './filters/CustomValueHandler';
+import ResultsCountFilter from './filters/ResultsCountFilter';
+import SortByFilter from './filters/SortByFilter';
+import NumericRangeFilter from './filters/NumericRangeFilter';
+import ChannelAgeFilter from './filters/ChannelAgeFilter';
+import AdvancedFiltersAccordion from './filters/AdvancedFiltersAccordion';
 
 export interface SearchFilters {
   minViews: number | null;
@@ -48,28 +42,42 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   open, 
   onOpenChange 
 }) => {
-  // Estado para valores personalizados
-  const [customMinViews, setCustomMinViews] = useState<string>('');
-  const [customMaxViews, setCustomMaxViews] = useState<string>('');
-  const [customMinSubs, setCustomMinSubs] = useState<string>('');
-  const [customMaxSubs, setCustomMaxSubs] = useState<string>('');
-  const [customMaxResults, setCustomMaxResults] = useState<string>('');
+  // Usando o hook customizado para gerenciar os valores personalizados
+  const { customValues, setCustomValue } = useCustomValues();
   
-  // Handler para mudança de valores personalizados
-  const handleCustomValueChange = (key: string, value: string) => {
-    // Permitir apenas números
-    if (value === '' || /^\d+$/.test(value)) {
-      if (key === 'minViews') setCustomMinViews(value);
-      if (key === 'maxViews') setCustomMaxViews(value);
-      if (key === 'minSubscribers') setCustomMinSubs(value);
-      if (key === 'maxSubscribers') setCustomMaxSubs(value);
-      if (key === 'maxResults') setCustomMaxResults(value);
-      
-      // Converter para número ou null
-      const numValue = value === '' ? null : parseInt(value);
-      onChange(key, numValue);
-    }
-  };
+  // Opções para os filtros de visualizações
+  const viewsMinOptions = [
+    { value: 'null', label: 'Sem mínimo' },
+    { value: '1000', label: '1.000+' },
+    { value: '10000', label: '10.000+' },
+    { value: '100000', label: '100.000+' },
+    { value: '1000000', label: '1.000.000+' }
+  ];
+  
+  const viewsMaxOptions = [
+    { value: 'null', label: 'Sem máximo' },
+    { value: '10000', label: '10.000' },
+    { value: '100000', label: '100.000' },
+    { value: '1000000', label: '1.000.000' },
+    { value: '10000000', label: '10.000.000' }
+  ];
+  
+  // Opções para os filtros de inscritos
+  const subscribersMinOptions = [
+    { value: 'null', label: 'Sem mínimo' },
+    { value: '1000', label: '1.000+' },
+    { value: '10000', label: '10.000+' },
+    { value: '100000', label: '100.000+' },
+    { value: '1000000', label: '1.000.000+' }
+  ];
+  
+  const subscribersMaxOptions = [
+    { value: 'null', label: 'Sem máximo' },
+    { value: '10000', label: '10.000' },
+    { value: '100000', label: '100.000' },
+    { value: '1000000', label: '1.000.000' },
+    { value: '10000000', label: '10.000.000' }
+  ];
 
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
@@ -87,235 +95,57 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
         <div className="space-y-4">
           <h3 className="font-medium text-lg mb-2">Filtros Avançados</h3>
           
-          <div>
-            <label className="text-sm font-medium">Quantidade de resultados</label>
-            <Select 
-              value={filters.maxResults && !customMaxResults ? filters.maxResults.toString() : customMaxResults ? "custom" : "20"} 
-              onValueChange={(value) => {
-                if (value === "custom") {
-                  setCustomMaxResults('');
-                } else {
-                  setCustomMaxResults('');
-                  onChange('maxResults', parseInt(value));
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Quantidade de resultados" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 vídeos</SelectItem>
-                <SelectItem value="20">20 vídeos</SelectItem>
-                <SelectItem value="50">50 vídeos</SelectItem>
-                <SelectItem value="custom">Valor personalizado</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {customMaxResults === "custom" && (
-              <Input
-                type="text"
-                placeholder="Digite a quantidade de resultados"
-                value={customMaxResults}
-                onChange={(e) => handleCustomValueChange('maxResults', e.target.value)}
-                className="mt-1"
-              />
-            )}
-          </div>
+          {/* Quantidade de resultados */}
+          <ResultsCountFilter
+            maxResults={filters.maxResults}
+            onChange={(value) => onChange('maxResults', value || 20)}
+            customValue={customValues.maxResults}
+            setCustomValue={(value) => setCustomValue('maxResults', value)}
+          />
           
-          <div>
-            <label className="text-sm font-medium">Classificar por</label>
-            <Select 
-              value={filters.sortBy} 
-              onValueChange={(value) => onChange('sortBy', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Classificar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevância</SelectItem>
-                <SelectItem value="views">Visualizações</SelectItem>
-                <SelectItem value="subscribers">Inscritos</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Classificação */}
+          <SortByFilter 
+            value={filters.sortBy} 
+            onChange={(value) => onChange('sortBy', value)}
+          />
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Visualizações</label>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">Mínimo</label>
-                <Select 
-                  value={filters.minViews && !customMinViews ? filters.minViews.toString() : customMinViews ? "custom" : "null"} 
-                  onValueChange={(value) => {
-                    if (value === "custom") {
-                      setCustomMinViews('');
-                    } else {
-                      setCustomMinViews('');
-                      onChange('minViews', value === "null" ? null : parseInt(value));
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Mínimo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Sem mínimo</SelectItem>
-                    <SelectItem value="1000">1.000+</SelectItem>
-                    <SelectItem value="10000">10.000+</SelectItem>
-                    <SelectItem value="100000">100.000+</SelectItem>
-                    <SelectItem value="1000000">1.000.000+</SelectItem>
-                    <SelectItem value="custom">Valor personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {filters.minViews === null && customMinViews === "custom" && (
-                  <Input
-                    type="text"
-                    placeholder="Digite o valor mínimo"
-                    value={customMinViews}
-                    onChange={(e) => handleCustomValueChange('minViews', e.target.value)}
-                    className="mt-1"
-                  />
-                )}
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Máximo</label>
-                <Select 
-                  value={filters.maxViews && !customMaxViews ? filters.maxViews.toString() : customMaxViews ? "custom" : "null"} 
-                  onValueChange={(value) => {
-                    if (value === "custom") {
-                      setCustomMaxViews('');
-                    } else {
-                      setCustomMaxViews('');
-                      onChange('maxViews', value === "null" ? null : parseInt(value));
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Máximo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Sem máximo</SelectItem>
-                    <SelectItem value="10000">10.000</SelectItem>
-                    <SelectItem value="100000">100.000</SelectItem>
-                    <SelectItem value="1000000">1.000.000</SelectItem>
-                    <SelectItem value="10000000">10.000.000</SelectItem>
-                    <SelectItem value="custom">Valor personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {filters.maxViews === null && customMaxViews === "custom" && (
-                  <Input
-                    type="text"
-                    placeholder="Digite o valor máximo"
-                    value={customMaxViews}
-                    onChange={(e) => handleCustomValueChange('maxViews', e.target.value)}
-                    className="mt-1"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Filtro de visualizações */}
+          <NumericRangeFilter
+            label="Visualizações"
+            minValue={filters.minViews}
+            maxValue={filters.maxViews}
+            onMinChange={(value) => onChange('minViews', value)}
+            onMaxChange={(value) => onChange('maxViews', value)}
+            minOptions={viewsMinOptions}
+            maxOptions={viewsMaxOptions}
+            customMinValue={customValues.minViews}
+            customMaxValue={customValues.maxViews}
+            setCustomMinValue={(value) => setCustomValue('minViews', value)}
+            setCustomMaxValue={(value) => setCustomValue('maxViews', value)}
+          />
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Inscritos no canal</label>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">Mínimo</label>
-                <Select 
-                  value={filters.minSubscribers && !customMinSubs ? filters.minSubscribers.toString() : customMinSubs ? "custom" : "null"} 
-                  onValueChange={(value) => {
-                    if (value === "custom") {
-                      setCustomMinSubs('');
-                    } else {
-                      setCustomMinSubs('');
-                      onChange('minSubscribers', value === "null" ? null : parseInt(value));
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Mínimo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Sem mínimo</SelectItem>
-                    <SelectItem value="1000">1.000+</SelectItem>
-                    <SelectItem value="10000">10.000+</SelectItem>
-                    <SelectItem value="100000">100.000+</SelectItem>
-                    <SelectItem value="1000000">1.000.000+</SelectItem>
-                    <SelectItem value="custom">Valor personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {filters.minSubscribers === null && customMinSubs === "custom" && (
-                  <Input
-                    type="text"
-                    placeholder="Digite o valor mínimo"
-                    value={customMinSubs}
-                    onChange={(e) => handleCustomValueChange('minSubscribers', e.target.value)}
-                    className="mt-1"
-                  />
-                )}
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Máximo</label>
-                <Select 
-                  value={filters.maxSubscribers && !customMaxSubs ? filters.maxSubscribers.toString() : customMaxSubs ? "custom" : "null"} 
-                  onValueChange={(value) => {
-                    if (value === "custom") {
-                      setCustomMaxSubs('');
-                    } else {
-                      setCustomMaxSubs('');
-                      onChange('maxSubscribers', value === "null" ? null : parseInt(value));
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Máximo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="null">Sem máximo</SelectItem>
-                    <SelectItem value="10000">10.000</SelectItem>
-                    <SelectItem value="100000">100.000</SelectItem>
-                    <SelectItem value="1000000">1.000.000</SelectItem>
-                    <SelectItem value="10000000">10.000.000</SelectItem>
-                    <SelectItem value="custom">Valor personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {filters.maxSubscribers === null && customMaxSubs === "custom" && (
-                  <Input
-                    type="text"
-                    placeholder="Digite o valor máximo"
-                    value={customMaxSubs}
-                    onChange={(e) => handleCustomValueChange('maxSubscribers', e.target.value)}
-                    className="mt-1"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Filtro de inscritos */}
+          <NumericRangeFilter
+            label="Inscritos no canal"
+            minValue={filters.minSubscribers}
+            maxValue={filters.maxSubscribers}
+            onMinChange={(value) => onChange('minSubscribers', value)}
+            onMaxChange={(value) => onChange('maxSubscribers', value)}
+            minOptions={subscribersMinOptions}
+            maxOptions={subscribersMaxOptions}
+            customMinValue={customValues.minSubscribers}
+            customMaxValue={customValues.maxSubscribers}
+            setCustomMinValue={(value) => setCustomValue('minSubscribers', value)}
+            setCustomMaxValue={(value) => setCustomValue('maxSubscribers', value)}
+          />
           
-          <div>
-            <label className="text-sm font-medium">Idade do canal</label>
-            <Select 
-              value={filters.channelAge || "null"} 
-              onValueChange={(value) => onChange('channelAge', value === "null" ? null : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Qualquer idade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="null">Qualquer idade</SelectItem>
-                <SelectItem value="1day">Último dia</SelectItem>
-                <SelectItem value="7days">Últimos 7 dias</SelectItem>
-                <SelectItem value="15days">Últimos 15 dias</SelectItem>
-                <SelectItem value="30days">Últimos 30 dias</SelectItem>
-                <SelectItem value="2months">Últimos 2 meses</SelectItem>
-                <SelectItem value="3months">Últimos 3 meses</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Idade do canal */}
+          <ChannelAgeFilter
+            value={filters.channelAge}
+            onChange={(value) => onChange('channelAge', value)}
+          />
           
+          {/* Filtros avançados */}
           <AdvancedFiltersAccordion 
             filters={filters} 
             onChange={onChange} 
@@ -323,75 +153,6 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
         </div>
       </PopoverContent>
     </Popover>
-  );
-};
-
-// Sub-component for the advanced filters accordion
-interface AdvancedFiltersProps {
-  filters: SearchFilters;
-  onChange: (key: string, value: any) => void;
-}
-
-const AdvancedFiltersAccordion: React.FC<AdvancedFiltersProps> = ({ filters, onChange }) => {
-  return (
-    <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="advanced-filters">
-        <AccordionTrigger className="text-sm font-medium">
-          Filtros avançados
-        </AccordionTrigger>
-        <AccordionContent>
-          <div className="space-y-4 pt-2">
-            <div>
-              <label className="text-sm font-medium">País</label>
-              <Select 
-                value={filters.country} 
-                onValueChange={(value) => onChange('country', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="País" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BR">Brasil</SelectItem>
-                  <SelectItem value="US">Estados Unidos</SelectItem>
-                  <SelectItem value="ES">Espanha</SelectItem>
-                  <SelectItem value="PT">Portugal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Idioma</label>
-              <Select 
-                value={filters.language} 
-                onValueChange={(value) => onChange('language', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Idioma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pt">Português</SelectItem>
-                  <SelectItem value="en">Inglês</SelectItem>
-                  <SelectItem value="es">Espanhol</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="includeShorts"
-                checked={filters.includeShorts}
-                onChange={(e) => onChange('includeShorts', e.target.checked)}
-                className="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-              />
-              <label htmlFor="includeShorts" className="text-sm">
-                Incluir Shorts
-              </label>
-            </div>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
   );
 };
 
